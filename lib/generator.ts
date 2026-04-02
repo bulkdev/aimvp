@@ -1,6 +1,7 @@
 import type { IntakeFormData, GeneratedSiteContent, ServiceItem, FaqItem } from "@/types";
 import { pickThemeFromIntake } from "@/lib/utils";
 import { resolveSiteVariant } from "@/lib/siteVariant";
+import { intakeLocationLine } from "@/lib/location";
 
 // ─── Real OpenAI integration (activate when OPENAI_API_KEY is set) ────────────
 // To enable: set OPENAI_API_KEY in .env.local
@@ -54,6 +55,7 @@ function buildPrompt(intake: IntakeFormData): string {
     intake.phone && `Phone: ${intake.phone}`,
     intake.email && `Email: ${intake.email}`,
     intake.city && `City: ${intake.city}`,
+    intake.state && `State/region: ${intake.state}`,
     intake.address && `Address: ${intake.address}`,
   ]
     .filter(Boolean)
@@ -64,7 +66,7 @@ Generate a professional website content JSON for this local business:
 
 Company Name: ${intake.companyName}
 Business Description: ${intake.businessDescription}
-Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade from text; plumbing = plumber-style copy and structure)
+Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade from text; plumbing/plumbing-split/plumbing-boxed = plumber-style copy and structure)
 Source Link (optional): ${intake.sourceLink || "N/A"}
 ${optionals}
 Booking: ${intake.bookingEnabled ? "Yes" : "No"}
@@ -107,6 +109,7 @@ Rules:
 - No fake testimonials, no fake reviews, no invented facts
 - Keep all copy professional, warm, and conversion-focused
 - Use only real information provided — do not invent addresses, phone numbers, or credentials
+- When both city and state/region are provided, use them together in natural copy (e.g. "Everett, WA") in hero, about, FAQs, and contact where location matters
 - Icon names must be valid lucide-react icons (e.g., "Star", "Shield", "Clock", "Wrench", "Home", "Heart", "Zap", "CheckCircle", "Users", "Award", "Truck", "Settings")
 ${plumbingPromptExtra(intake)}
 `;
@@ -203,8 +206,8 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
 }
 
 function resolveServiceArea(intake: IntakeFormData): string {
-  const directCity = intake.city?.trim();
-  if (directCity) return directCity;
+  const fromIntake = intakeLocationLine(intake);
+  if (fromIntake) return fromIntake;
 
   const address = intake.address?.trim();
   if (!address) return "your area";

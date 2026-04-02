@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
+import { normalizeNap } from "@/lib/seo";
 
 interface Props {
   content: GeneratedSiteContent;
@@ -10,10 +11,18 @@ interface Props {
 
 export default function ContactSection({ content, intake }: Props) {
   const [sent, setSent] = useState(false);
+  const nap = normalizeNap(intake);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     // In production: POST to a form handler or Netlify/Resend/EmailJS
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("lead_submit", {
+          detail: { form: "contact", section: "contact" },
+        })
+      );
+    }
     setSent(true);
   }
 
@@ -71,7 +80,7 @@ export default function ContactSection({ content, intake }: Props) {
 
             {/* Contact details */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {intake.phone && (
+              {nap.phone && (
                 <ContactRow
                   icon={
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -79,10 +88,10 @@ export default function ContactSection({ content, intake }: Props) {
                     </svg>
                   }
                   label="Phone"
-                  value={<a href={`tel:${intake.phone}`} style={{ color: "var(--accent)", textDecoration: "none" }}>{intake.phone}</a>}
+                  value={<a href={`tel:${nap.phone}`} style={{ color: "var(--accent)", textDecoration: "none" }}>{nap.phone}</a>}
                 />
               )}
-              {intake.email && (
+              {nap.email && (
                 <ContactRow
                   icon={
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -91,10 +100,10 @@ export default function ContactSection({ content, intake }: Props) {
                     </svg>
                   }
                   label="Email"
-                  value={<a href={`mailto:${intake.email}`} style={{ color: "var(--accent)", textDecoration: "none" }}>{intake.email}</a>}
+                  value={<a href={`mailto:${nap.email}`} style={{ color: "var(--accent)", textDecoration: "none" }}>{nap.email}</a>}
                 />
               )}
-              {(intake.address || intake.city) && (
+              {nap.fullAddress && (
                 <ContactRow
                   icon={
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -103,7 +112,7 @@ export default function ContactSection({ content, intake }: Props) {
                     </svg>
                   }
                   label="Location"
-                  value={[intake.address, intake.city].filter(Boolean).join(", ")}
+                  value={nap.fullAddress}
                 />
               )}
             </div>
@@ -162,6 +171,14 @@ export default function ContactSection({ content, intake }: Props) {
                 <div>
                   <label style={labelStyle}>Phone (optional)</label>
                   <input type="tel" placeholder="(555) 000-0000" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Address</label>
+                  <input type="text" name="address" placeholder="123 Main St, City, State" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Service Type</label>
+                  <input type="text" name="serviceType" placeholder="e.g. Drain cleaning, Water heater repair" style={inputStyle} />
                 </div>
                 <div>
                   <label style={labelStyle}>Message</label>

@@ -67,12 +67,6 @@ export default function PreviewShell({ project }: Props) {
         <SiteTemplate project={project} />
       </div>
 
-      {/* Footer note */}
-      <div className="bg-gray-900 border-t border-white/10 py-3 px-6 text-center">
-        <p className="text-white/30 text-xs">
-          This is a generated draft. Content, colors, and copy can be customized before publishing.
-        </p>
-      </div>
     </div>
   );
 }

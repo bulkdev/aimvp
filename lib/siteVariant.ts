@@ -49,7 +49,7 @@ export function resolveSiteVariant(
   choice: SiteTemplateChoice | undefined,
   companyName = ""
 ): SiteTemplateVariant {
-  if (choice === "plumbing") return "plumbing";
+  if (choice === "plumbing" || choice === "plumbing-split" || choice === "plumbing-boxed") return "plumbing";
   if (choice === "default") return "default";
   return inferSiteVariant(description, companyName);
 }

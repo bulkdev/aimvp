@@ -1,4 +1,5 @@
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
+import { intakeLocationLine } from "@/lib/location";
 
 interface Props {
   content: GeneratedSiteContent;
@@ -7,6 +8,7 @@ interface Props {
 
 export default function HeroSection({ content, intake }: Props) {
   const { hero, tagline } = content;
+  const locationLine = intakeLocationLine(intake);
 
   return (
     <section
@@ -50,25 +52,28 @@ export default function HeroSection({ content, intake }: Props) {
 
       <div className="relative z-10 px-6 md:px-12 lg:px-24 py-20 max-w-screen-xl mx-auto w-full">
         <div className="max-w-3xl">
-          {/* Eyebrow */}
-          <span className="section-label" style={{ color: "rgba(255,255,255,0.55)" }}>
-            {tagline}
-          </span>
+          <div style={{ marginTop: "108px" }}>
+            {/* Eyebrow */}
+            <span className="section-label" style={{ color: "rgba(255,255,255,0.55)" }}>
+              {tagline}
+            </span>
 
-          {/* Main headline */}
-          <h1
-            style={{
-              fontFamily: "var(--h-font)",
-              fontSize: "clamp(2.5rem, 5vw, 4rem)",
-              fontWeight: 700,
-              color: "#ffffff",
-              lineHeight: 1.15,
-              marginBottom: "24px",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            {hero.title}
-          </h1>
+            {/* Main headline */}
+            <h1
+              style={{
+                fontFamily: "var(--h-font)",
+                fontSize: "clamp(2.5rem, 5vw, 4rem)",
+                fontWeight: 700,
+                color: "#ffffff",
+                lineHeight: 1.15,
+                marginTop: "24px",
+                marginBottom: "24px",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              {hero.title}
+            </h1>
+          </div>
 
           {/* Subheadline */}
           <p
@@ -111,7 +116,7 @@ export default function HeroSection({ content, intake }: Props) {
           </div>
 
           {/* Trust badges */}
-          {(intake.phone || intake.city) && (
+          {(intake.phone || locationLine) && (
             <div style={{
               marginTop: "56px",
               display: "flex",
@@ -120,14 +125,14 @@ export default function HeroSection({ content, intake }: Props) {
               borderTop: "1px solid rgba(255,255,255,0.1)",
               paddingTop: "32px",
             }}>
-              {intake.city && (
+              {locationLine && (
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
                   <span style={{ color: "rgba(255,255,255,0.55)", fontSize: "14px" }}>
-                    Serving {intake.city}
+                    Serving {locationLine}
                   </span>
                 </div>
               )}

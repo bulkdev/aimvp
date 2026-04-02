@@ -1,11 +1,17 @@
 // ─── Intake Form ────────────────────────────────────────────────────────────
 
 /** Controls layout + theme. "auto" infers from business description (e.g. plumbing keywords). */
-export type SiteTemplateChoice = "auto" | "default" | "plumbing";
+export type SiteTemplateChoice =
+  | "auto"
+  | "default"
+  | "plumbing"
+  | "plumbing-split"
+  | "plumbing-boxed";
 
 export interface IntakeFormData {
   companyName: string;
   businessDescription: string;
+  customDomain?: string;
   sourceLink?: string;
   importedHeroSlides?: string[];
   importedPortfolioProjects?: string[][];
@@ -17,6 +23,8 @@ export interface IntakeFormData {
   email?: string;
   address?: string;
   city?: string;
+  /** US state/region abbreviation (e.g. WA) — combined with city for display and SEO copy */
+  state?: string;
   bookingEnabled: boolean;
   paymentEnabled: boolean;
 }
@@ -58,6 +66,50 @@ export interface GeneratedSiteContent {
     heroSlides?: string[];
     portfolioProjects?: string[][];
     serviceCardImages?: Record<string, string>;
+    socialLinks?: {
+      facebook?: string;
+      instagram?: string;
+      linkedin?: string;
+      x?: string;
+    };
+    openingHours?: string[];
+    geo?: {
+      latitude?: number;
+      longitude?: number;
+    };
+    manualReviews?: {
+      reviewerName: string;
+      rating: number;
+      text: string;
+      reviewUrl?: string;
+      reviewAge?: string;
+      reviewDate?: string;
+      avatarLetter?: string;
+    }[];
+    sectionOrder?: Array<
+      | "hero"
+      | "services"
+      | "portfolio"
+      | "about"
+      | "booking"
+      | "faq"
+      | "reviews"
+      | "cta"
+      | "payment"
+      | "contact"
+    >;
+    layoutVariant?: "standard" | "services-first" | "about-first";
+    designVariants?: {
+      navbar?: "standard" | "split-bar" | "boxed";
+      heroSlideshow?: "fade" | "zoom" | "slide";
+      heroCtaPlacement?: "inline" | "stacked" | "bottom-bar";
+      ourWork?: "cards" | "minimal-grid" | "split-feature";
+    };
+    serviceGroups?: {
+      title: string;
+      items: string[];
+    }[];
+    serviceAreas?: string[];
     portfolioEntries?: {
       projectName: string;
       serviceType: string;
@@ -117,6 +169,7 @@ export interface EnrichLinkResponse {
       | "email"
       | "address"
       | "city"
+      | "state"
       | "sourceLink"
       | "importedHeroSlides"
       | "importedPortfolioProjects"

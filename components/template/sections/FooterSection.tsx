@@ -1,12 +1,52 @@
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
+import { normalizeNap } from "@/lib/seo";
 
 interface Props {
   content: GeneratedSiteContent;
   intake: IntakeFormData;
 }
 
+function SocialIcon({ name }: { name: "Facebook" | "Instagram" | "LinkedIn" | "X" }) {
+  if (name === "Facebook") {
+    return (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+        <path d="M13.5 22v-8h2.7l.4-3h-3.1V9.1c0-.9.3-1.6 1.6-1.6h1.7V4.8c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3V11H8v3h2.6v8h2.9z" />
+      </svg>
+    );
+  }
+  if (name === "Instagram") {
+    return (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+  if (name === "LinkedIn") {
+    return (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+        <path d="M6.94 8.5H3.56V20h3.38V8.5zM5.25 3A1.96 1.96 0 1 0 5.3 6.92 1.96 1.96 0 0 0 5.25 3zM20 13.46c0-3.06-1.64-4.48-3.83-4.48a3.3 3.3 0 0 0-2.96 1.63h-.05V8.5H9.78V20h3.38v-5.7c0-1.5.28-2.95 2.14-2.95 1.83 0 1.86 1.71 1.86 3.05V20h3.38v-6.54z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+      <path d="M18.9 3h2.9l-6.3 7.2L23 21h-5.9l-4.6-6.1L7.2 21H4.3l6.7-7.7L1 3h6l4.1 5.5L18.9 3zm-1 16h1.6L6.1 4.9H4.4L17.9 19z" />
+    </svg>
+  );
+}
+
 export default function FooterSection({ content, intake }: Props) {
   const year = new Date().getFullYear();
+  const nap = normalizeNap(intake);
+  const socialLinks = content.assets?.socialLinks ?? {};
+  const socials = [
+    { key: "facebook", label: "Facebook", href: socialLinks.facebook },
+    { key: "instagram", label: "Instagram", href: socialLinks.instagram },
+    { key: "linkedin", label: "LinkedIn", href: socialLinks.linkedin },
+    { key: "x", label: "X", href: socialLinks.x },
+  ].filter((item) => Boolean(item.href));
 
   return (
     <footer
@@ -71,7 +111,7 @@ export default function FooterSection({ content, intake }: Props) {
               Quick Links
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {["Services", "About", "FAQ", "Contact"].map((link) => (
+              {["Services", "Work", "About", "FAQ", "Reviews", "Contact"].map((link) => (
                 <a
                   key={link}
                   href={`#${link.toLowerCase()}`}
@@ -89,21 +129,58 @@ export default function FooterSection({ content, intake }: Props) {
               Contact
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
-              {intake.phone && (
-                <a href={`tel:${intake.phone}`} style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>
-                  {intake.phone}
+              {nap.phone && (
+                <a href={`tel:${nap.phone}`} style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>
+                  {nap.phone}
                 </a>
               )}
-              {intake.email && (
-                <a href={`mailto:${intake.email}`} style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>
-                  {intake.email}
+              {nap.email && (
+                <a href={`mailto:${nap.email}`} style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>
+                  {nap.email}
                 </a>
               )}
-              {intake.city && (
-                <span style={{ color: "rgba(255,255,255,0.5)" }}>{intake.city}</span>
+              {nap.fullAddress && (
+                <span style={{ color: "rgba(255,255,255,0.5)" }}>{nap.fullAddress}</span>
               )}
             </div>
           </div>
+
+          {/* Social */}
+          {socials.length > 0 && (
+            <div>
+              <h4 style={{ color: "white", fontSize: "13px", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "16px" }}>
+                Follow Us
+              </h4>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                {socials.map((item) => (
+                  <a
+                    key={item.key}
+                    href={item.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={item.label}
+                    title={item.label}
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "999px",
+                      background: "color-mix(in srgb, var(--accent) 26%, transparent)",
+                      border: "1px solid rgba(255,255,255,0.16)",
+                      color: "white",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textDecoration: "none",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <SocialIcon name={item.label as "Facebook" | "Instagram" | "LinkedIn" | "X"} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bottom bar */}
@@ -122,7 +199,7 @@ export default function FooterSection({ content, intake }: Props) {
             © {year} {content.brandName}. All rights reserved.
           </p>
           <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)" }}>
-            Site generated by SiteGenAI
+            Site created by JayWebDesign
           </p>
         </div>
       </div>

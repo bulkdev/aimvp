@@ -2,6 +2,7 @@ import React from "react";
 import type { Project } from "@/types";
 import { buildThemeCssVars } from "@/lib/utils";
 import { resolveSiteVariant } from "@/lib/siteVariant";
+import { normalizeNap } from "@/lib/seo";
 import NavbarSection from "./sections/NavbarSection";
 import HeroSection from "./sections/HeroSection";
 import PlumbingHeroSection from "./sections/PlumbingHeroSection";
@@ -14,6 +15,9 @@ import BookingSection from "./sections/BookingSection";
 import PaymentSection from "./sections/PaymentSection";
 import FooterSection from "./sections/FooterSection";
 import CtaBanner from "./sections/CtaBanner";
+import GoogleReviewsSection from "./sections/GoogleReviewsSection";
+import SeoAnalytics from "@/components/seo/SeoAnalytics";
+import ScrollReveal from "./ScrollReveal";
 
 interface Props {
   project: Project;
@@ -22,20 +26,218 @@ interface Props {
 export default function SiteTemplate({ project }: Props) {
   const { content, intake } = project;
   const cssVars = buildThemeCssVars(content.theme);
+  const design = content.assets?.designVariants;
   const variant = resolveSiteVariant(
     intake.businessDescription,
     intake.siteTemplate ?? "auto",
     intake.companyName
   );
-
+  const canonicalUrl = intake.customDomain
+    ? intake.customDomain.startsWith("http://") || intake.customDomain.startsWith("https://")
+      ? intake.customDomain
+      : `https://${intake.customDomain}`
+    : undefined;
+  const plumbingPreset =
+    intake.siteTemplate === "plumbing-split"
+      ? "split"
+      : intake.siteTemplate === "plumbing-boxed"
+        ? "boxed"
+        : "classic";
+  const presetLayoutVariant =
+    plumbingPreset === "split"
+      ? "services-first"
+      : plumbingPreset === "boxed"
+        ? "about-first"
+        : "standard";
+  const layoutVariant =
+    variant === "plumbing"
+      ? content.assets?.layoutVariant ?? presetLayoutVariant
+      : content.assets?.layoutVariant ?? "standard";
+  const effectiveDesign =
+    variant === "plumbing"
+      ? {
+          navbar:
+            design?.navbar ??
+            (plumbingPreset === "split"
+              ? "split-bar"
+              : plumbingPreset === "boxed"
+                ? "boxed"
+                : "standard"),
+          heroSlideshow:
+            design?.heroSlideshow ??
+            (plumbingPreset === "split"
+              ? "slide"
+              : plumbingPreset === "boxed"
+                ? "zoom"
+                : "fade"),
+          heroCtaPlacement:
+            design?.heroCtaPlacement ??
+            (plumbingPreset === "split"
+              ? "bottom-bar"
+              : plumbingPreset === "boxed"
+                ? "stacked"
+                : "inline"),
+          ourWork:
+            design?.ourWork ??
+            (plumbingPreset === "split"
+              ? "minimal-grid"
+              : plumbingPreset === "boxed"
+                ? "split-feature"
+                : "cards"),
+        }
+      : design;
+  const nap = normalizeNap(intake);
+  const manualReviews = (content.assets?.manualReviews || []).filter((r) => r.reviewerName?.trim() && r.text?.trim());
+  const aggregateRating =
+    manualReviews.length > 0
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: (manualReviews.reduce((sum, r) => sum + Math.max(1, Math.min(5, r.rating || 5)), 0) / manualReviews.length).toFixed(1),
+          reviewCount: manualReviews.length,
+        }
+      : undefined;
+  const reviewEntities =
+    manualReviews.length > 0
+      ? manualReviews.map((r) => ({
+          "@type": "Review",
+          author: { "@type": "Person", name: r.reviewerName.trim() },
+          reviewRating: { "@type": "Rating", ratingValue: Math.max(1, Math.min(5, r.rating || 5)), bestRating: 5 },
+          reviewBody: r.text.trim(),
+          datePublished: r.reviewDate || undefined,
+        }))
+      : undefined;
+  const serviceCatalog = content.services
+    .map((s) => s.title.trim())
+    .filter(Boolean)
+    .slice(0, 12)
+    .map((serviceName) => ({
+      "@type": "Service",
+      name: serviceName,
+      areaServed: (content.assets?.serviceAreas || []).slice(0, 20),
+      provider: { "@type": variant === "plumbing" ? "Plumber" : "LocalBusiness", name: content.brandName },
+    }));
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": variant === "plumbing" ? "Plumber" : "LocalBusiness",
+    name: content.brandName,
+    description: intake.businessDescription || content.hero.subtitle,
+    url: canonicalUrl,
+    telephone: nap.phone,
+    email: nap.email,
+    address:
+      nap.streetAddress || nap.city
+        ? {
+            "@type": "PostalAddress",
+            streetAddress: nap.streetAddress || undefined,
+            addressLocality: nap.addressLocality || undefined,
+            addressRegion: nap.addressRegion || undefined,
+          }
+        : undefined,
+    geo:
+      typeof content.assets?.geo?.latitude === "number" && typeof content.assets?.geo?.longitude === "number"
+        ? {
+            "@type": "GeoCoordinates",
+            latitude: content.assets.geo.latitude,
+            longitude: content.assets.geo.longitude,
+          }
+        : undefined,
+    openingHoursSpecification:
+      content.assets?.openingHours?.length
+        ? content.assets.openingHours.map((entry) => ({
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: entry.split(" ").slice(0, -1).join(" "),
+            opens: entry.includes("-") ? entry.split("-")[0]?.trim() : undefined,
+            closes: entry.includes("-") ? entry.split("-")[1]?.trim() : undefined,
+          }))
+        : undefined,
+    areaServed: (content.assets?.serviceAreas || []).map((area) => ({
+      "@type": "City",
+      name: area,
+    })),
+    priceRange: "$$",
+    aggregateRating,
+    review: reviewEntities,
+    hasOfferCatalog: serviceCatalog.length
+      ? {
+          "@type": "OfferCatalog",
+          name: "Services",
+          itemListElement: serviceCatalog,
+        }
+      : undefined,
+    sameAs: Object.values(content.assets?.socialLinks || {}).filter(Boolean),
+  };
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: content.faqs.map((f) => ({
+      "@type": "Question",
+      name: f.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: f.answer,
+      },
+    })),
+  };
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: content.brandName,
+    url: canonicalUrl,
+  };
+  type SectionKey =
+    | "hero"
+    | "services"
+    | "portfolio"
+    | "about"
+    | "booking"
+    | "faq"
+    | "reviews"
+    | "cta"
+    | "payment"
+    | "contact";
+  const defaultOrderFromLayout: SectionKey[] =
+    layoutVariant === "about-first"
+      ? ["hero", "about", "services", "portfolio", "booking", "faq", "reviews", "cta", "payment", "contact"]
+      : layoutVariant === "services-first"
+        ? ["hero", "services", "portfolio", "about", "booking", "faq", "reviews", "cta", "payment", "contact"]
+        : ["hero", "services", "portfolio", "about", "booking", "faq", "reviews", "cta", "payment", "contact"];
+  const rawOrder = (content.assets?.sectionOrder as SectionKey[] | undefined) ?? defaultOrderFromLayout;
+  const allowedSet = new Set<SectionKey>(["hero", "services", "portfolio", "about", "booking", "faq", "reviews", "cta", "payment", "contact"]);
+  const normalizedOrder: SectionKey[] = [
+    ...rawOrder.filter((k) => allowedSet.has(k)),
+    ...defaultOrderFromLayout.filter((k) => !rawOrder.includes(k)),
+  ];
+  const sectionMap: Record<SectionKey, React.ReactNode> = {
+    hero:
+      variant === "plumbing" ? (
+        <PlumbingHeroSection
+          content={content}
+          intake={intake}
+          slideshowVariant={effectiveDesign?.heroSlideshow ?? "fade"}
+          ctaPlacement={effectiveDesign?.heroCtaPlacement ?? "inline"}
+        />
+      ) : (
+        <HeroSection content={content} intake={intake} />
+      ),
+    services: <ServicesSection content={content} intake={intake} isPlumbing={variant === "plumbing"} />,
+    portfolio: <PortfolioSection content={content} styleVariant={effectiveDesign?.ourWork ?? "cards"} />,
+    about: <AboutSection content={content} />,
+    booking: intake.bookingEnabled ? <BookingSection content={content} /> : null,
+    faq: <FaqSection content={content} />,
+    reviews: <GoogleReviewsSection content={content} />,
+    cta: <CtaBanner content={content} intake={intake} />,
+    payment: intake.paymentEnabled ? <PaymentSection content={content} /> : null,
+    contact: <ContactSection content={content} intake={intake} />,
+  };
   return (
     <div
-      style={cssVars as React.CSSProperties}
+      style={{ ...(cssVars as React.CSSProperties), position: "relative" }}
       className="preview-root"
     >
+      <SeoAnalytics />
       {/* Google Fonts for the selected theme */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Lato:wght@300;400;700&family=Oswald:wght@400;500;600&family=Nunito:wght@400;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Lato:wght@300;400;700&family=Oswald:wght@400;500;600&family=Nunito:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&display=swap');
 
         .preview-root {
           --primary: var(--color-primary, #0f172a);
@@ -104,29 +306,65 @@ export default function SiteTemplate({ project }: Props) {
           border-radius: 2px;
           margin: 16px 0 24px;
         }
+
+        .chat-fab {
+          position: fixed;
+          right: 16px;
+          bottom: max(16px, env(safe-area-inset-bottom));
+          width: 56px;
+          height: 56px;
+          border-radius: 999px;
+          border: 0;
+          background: var(--accent);
+          color: #ffffff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 10px 25px rgba(15, 23, 42, 0.28);
+          z-index: 70;
+          text-decoration: none;
+          transition: transform 150ms ease, filter 150ms ease;
+        }
+
+        .chat-fab:hover {
+          transform: translateY(-1px) scale(1.03);
+          filter: brightness(1.05);
+        }
       `}</style>
-
-      <NavbarSection content={content} intake={intake} />
-      {variant === "plumbing" ? (
-        <PlumbingHeroSection content={content} intake={intake} />
-      ) : (
-        <HeroSection content={content} intake={intake} />
-      )}
-      <ServicesSection content={content} />
-      <PortfolioSection content={content} />
-      <AboutSection content={content} />
-
-      {/* Booking placeholder — only shown if user enabled it */}
-      {intake.bookingEnabled && <BookingSection content={content} />}
-
-      <FaqSection content={content} />
-      <CtaBanner content={content} intake={intake} />
-
-      {/* Payment placeholder — only shown if user enabled it */}
-      {intake.paymentEnabled && <PaymentSection content={content} />}
-
-      <ContactSection content={content} intake={intake} />
-      <FooterSection content={content} intake={intake} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      <>
+        <NavbarSection
+          content={content}
+          intake={intake}
+          isPlumbing={variant === "plumbing"}
+          styleVariant={effectiveDesign?.navbar ?? "standard"}
+        />
+        {normalizedOrder.map((key, i) => {
+          const node = sectionMap[key];
+          if (node == null) return null;
+          return (
+            <ScrollReveal key={key} delayMs={i * 65} variant={key === "hero" ? "hero" : "default"}>
+              {node}
+            </ScrollReveal>
+          );
+        })}
+        <ScrollReveal delayMs={normalizedOrder.length * 65}>
+          <FooterSection content={content} intake={intake} />
+        </ScrollReveal>
+      </>
+      <a href="#contact" className="chat-fab" aria-label="Open chat/contact">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M7 9.5h10M7 13h6m-7 7l-3 1.5L4.5 18H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </a>
     </div>
   );
 }

@@ -1,8 +1,11 @@
 import type { NextConfig } from "next";
 
+const isProd = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
-  // Vercel expects Next build output in ".next". Keep custom dist locally only.
-  distDir: process.env.VERCEL ? ".next" : "next-build-artifacts",
+  // Keep dev and prod artifacts isolated to avoid manifest shape mismatches.
+  // `next start` only supports production build output.
+  distDir: process.env.VERCEL ? ".next" : isProd ? "next-build-artifacts-prod" : "next-build-artifacts",
   webpack: (config, { dev }) => {
     // On some Windows setups, webpack's filesystem cache can lose chunk files
     // during fast refresh and cause "Cannot find module './xxx.js'" errors.

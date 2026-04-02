@@ -1,46 +1,73 @@
 "use client";
 
+import { useMemo } from "react";
+import { usePathname } from "next/navigation";
 import type { GeneratedSiteContent } from "@/types";
-import ServiceIcon from "@/components/template/ServiceIcon";
+import type { IntakeFormData } from "@/types";
+import { buildAreaUrl } from "@/lib/seo";
+import { intakeLocationLine } from "@/lib/location";
 
 interface Props {
   content: GeneratedSiteContent;
+  intake?: IntakeFormData;
+  isPlumbing?: boolean;
 }
 
-const SERVICE_STOCK: Record<string, string> = {
-  plumbing: "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=1200&q=80",
-  emergency: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80",
-  drain: "https://images.unsplash.com/photo-1590779033100-9f60a05a013d?auto=format&fit=crop&w=1200&q=80",
-  water: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=1200&q=80",
-  installation: "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?auto=format&fit=crop&w=1200&q=80",
-  maintenance: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&w=1200&q=80",
-  cleaning: "https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=1200&q=80",
-  lawn: "https://images.unsplash.com/photo-1560749003-f4b1e17e2f31?auto=format&fit=crop&w=1200&q=80",
-  landscaping: "https://images.unsplash.com/photo-1592417817038-d13fd7342605?auto=format&fit=crop&w=1200&q=80",
-  salon: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80",
-  beauty: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1200&q=80",
-  generic: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80",
-};
+const DEFAULT_GROUPS = [
+  {
+    title: "Plumbing Services",
+    items: [
+      "Residential Plumbing",
+      "Water Heater",
+      "Repiping & Pipe Repair",
+      "Drain Cleaning",
+      "Sewer Repair",
+      "Sump Pumps",
+      "Water Filtration",
+      "Leak Detection",
+    ],
+  },
+  {
+    title: "Heating Services",
+    items: [
+      "Boilers",
+      "Heating Maintenance",
+      "Oil-to-Gas Conversion",
+      "Commercial Heating",
+      "Carbon Monoxide Testing",
+    ],
+  },
+];
 
-function pickServiceImage(title: string, description: string, overrides?: Record<string, string>): string {
-  const hay = `${title} ${description}`.toLowerCase();
-  const normalizedTitle = title.trim().toLowerCase();
-  if (overrides?.[normalizedTitle]) return overrides[normalizedTitle];
-  if (hay.includes("emergency")) return SERVICE_STOCK.emergency;
-  if (hay.includes("drain") || hay.includes("clog") || hay.includes("sewer")) return SERVICE_STOCK.drain;
-  if (hay.includes("water heater") || hay.includes("water")) return SERVICE_STOCK.water;
-  if (hay.includes("install")) return SERVICE_STOCK.installation;
-  if (hay.includes("mainten") || hay.includes("inspection")) return SERVICE_STOCK.maintenance;
-  if (hay.includes("plumb") || hay.includes("plum")) return SERVICE_STOCK.plumbing;
-  if (hay.includes("clean")) return SERVICE_STOCK.cleaning;
-  if (hay.includes("lawn")) return SERVICE_STOCK.lawn;
-  if (hay.includes("landscap")) return SERVICE_STOCK.landscaping;
-  if (hay.includes("salon") || hay.includes("hair")) return SERVICE_STOCK.salon;
-  if (hay.includes("beauty") || hay.includes("spa")) return SERVICE_STOCK.beauty;
-  return SERVICE_STOCK.generic;
+function nearbyAreas(city?: string): string[] {
+  if (!city) return ["Surrounding neighborhoods", "Nearby communities", "Greater metro area"];
+  const clean = city.split(",")[0]?.trim() || city;
+  return [clean, `${clean} Downtown`, `${clean} North`, `${clean} South`, "Nearby communities"];
 }
 
-export default function ServicesSection({ content }: Props) {
+export default function ServicesSection({ content, intake, isPlumbing = false }: Props) {
+  const pathname = usePathname();
+  const publishedSiteId = useMemo(() => {
+    const m = pathname.match(/^\/site\/([^/]+)/);
+    return m?.[1];
+  }, [pathname]);
+  const configuredGroups =
+    content.assets?.serviceGroups
+      ?.filter((g) => g.title.trim() && g.items.some((item) => item.trim()))
+      .map((g) => ({
+      title: g.title.trim(),
+      items: g.items.map((item) => item.trim()).filter(Boolean),
+    })) ?? [];
+  const groups = configuredGroups.length > 0 ? configuredGroups : DEFAULT_GROUPS;
+  const locationLine = intake ? intakeLocationLine(intake) : "";
+  const city = locationLine || "your area";
+  const serviceAreas =
+    content.assets?.serviceAreas?.map((a) => a.trim()).filter(Boolean) ?? nearbyAreas(intake?.city);
+  const areaLinks =
+    publishedSiteId && isPlumbing
+      ? serviceAreas.slice(0, 8).map((area) => ({ label: area, href: buildAreaUrl(publishedSiteId, area) }))
+      : [];
+
   return (
     <section
       id="services"
@@ -62,102 +89,117 @@ export default function ServicesSection({ content }: Props) {
           >
             Our Services
           </h2>
+          {isPlumbing && (
+            <p style={{ color: "#4b5563", maxWidth: "760px", margin: "0 auto 8px", lineHeight: 1.7 }}>
+              {content.brandName} provides fast, reliable plumbing services in {city} and nearby areas.
+            </p>
+          )}
           <div className="accent-bar" style={{ margin: "0 auto 0" }} />
         </div>
 
-        {/* Service Cards */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "28px",
-          }}
-        >
-          {content.services.map((service, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[
+            ...groups,
+          ].map((group) => (
             <div
-              key={i}
+              key={group.title}
               style={{
-                position: "relative",
                 borderRadius: "16px",
-                padding: "36px 32px",
-                border: "1px solid rgba(255,255,255,0.18)",
-                boxShadow: "0 2px 16px rgba(0,0,0,0.18)",
-                transition: "all 0.25s",
-                cursor: "default",
-                overflow: "hidden",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 12px 40px rgba(0,0,0,0.24)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 16px rgba(0,0,0,0.18)";
+                padding: "28px 24px",
+                border: "1px solid rgba(15,23,42,0.08)",
+                background: "#ffffff",
+                boxShadow: "0 8px 24px rgba(15,23,42,0.06)",
               }}
             >
-              {/* Card background image */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={pickServiceImage(service.title, service.description, content.assets?.serviceCardImages)}
-                alt=""
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  inset: "-8px",
-                  width: "calc(100% + 16px)",
-                  height: "calc(100% + 16px)",
-                  objectFit: "cover",
-                  filter: "blur(1px)",
-                  transform: "scale(1.03)",
-                }}
-              />
-              {/* Gradient + blur glass overlay for readability */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    "linear-gradient(180deg, rgba(11,18,32,0.34) 0%, rgba(21,38,66,0.52) 48%, rgba(11,18,32,0.82) 100%)",
-                  backdropFilter: "blur(0.8px)",
-                }}
-              />
-
-              <div style={{ position: "relative", zIndex: 1 }}>
-              {/* Icon */}
-              <div
-                style={{
-                  width: "52px",
-                  height: "52px",
-                  background: "color-mix(in srgb, var(--accent) 24%, transparent)",
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: "20px",
-                }}
-              >
-                <ServiceIcon name={service.icon} color="var(--accent)" size={24} />
-              </div>
-
               <h3
                 style={{
                   fontFamily: "var(--h-font)",
-                  fontSize: "1.2rem",
-                  fontWeight: 600,
-                  color: "#ffffff",
-                  marginBottom: "12px",
+                  fontSize: "1.45rem",
+                  color: "var(--primary)",
+                  marginBottom: "14px",
                 }}
               >
-                {service.title}
+                {group.title}
               </h3>
-
-              <p style={{ color: "rgba(255,255,255,0.86)", fontSize: "0.95rem", lineHeight: 1.7 }}>
-                {service.description}
-              </p>
-              </div>
+              <ul
+                style={{
+                  margin: 0,
+                  padding: 0,
+                  listStyle: "none",
+                  display: "grid",
+                  gap: "8px",
+                }}
+              >
+                {group.items.map((item) => (
+                  <li key={item} className="text-[0.98rem] flex items-start gap-2" style={{ color: "#1f2937" }}>
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex items-center justify-center mt-[2px] w-4 h-4 rounded-full text-white text-[11px] font-bold leading-none"
+                      style={{ background: "var(--accent)" }}
+                    >
+                      ✓
+                    </span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="#contact"
+                style={{
+                  marginTop: "16px",
+                  display: "inline-block",
+                  fontWeight: 700,
+                  color: "var(--accent)",
+                  textDecoration: "none",
+                }}
+              >
+                See more
+              </a>
             </div>
           ))}
         </div>
+
+        {isPlumbing && (
+          <div className="mt-8">
+            <div
+              style={{
+                borderRadius: "16px",
+                padding: "24px 22px",
+                border: "1px solid rgba(15,23,42,0.08)",
+                background: "#ffffff",
+                boxShadow: "0 8px 24px rgba(15,23,42,0.06)",
+              }}
+            >
+              <h3 style={{ fontFamily: "var(--h-font)", fontSize: "1.2rem", color: "var(--primary)", marginBottom: "12px" }}>
+                Areas We Serve
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {serviceAreas.map((area) => {
+                  const link = areaLinks.find((l) => l.label === area);
+                  const pill = {
+                    display: "inline-block" as const,
+                    background: "color-mix(in srgb, var(--accent) 10%, #e2e8f0)",
+                    color: "var(--primary)",
+                    padding: "8px 14px",
+                    borderRadius: 999,
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                    border: "1px solid rgba(15, 23, 42, 0.08)",
+                  };
+                  return link ? (
+                    <a key={area} href={link.href} style={{ ...pill, textDecoration: "none", color: "var(--primary)" }}>
+                      {area}
+                    </a>
+                  ) : (
+                    <span key={area} style={pill}>
+                      {area}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

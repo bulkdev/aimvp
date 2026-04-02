@@ -17,6 +17,7 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
   const [form, setForm] = useState<IntakeFormData>({
     companyName: "",
     businessDescription: "",
+    customDomain: "",
     sourceLink: "",
     siteTemplate: "auto",
     logoDataUrl: undefined,
@@ -24,6 +25,7 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
     email: "",
     address: "",
     city: "",
+    state: "",
     bookingEnabled: false,
     paymentEnabled: false,
   });
@@ -104,6 +106,7 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
         email: fields.email || prev.email,
         address: fields.address || prev.address,
         city: fields.city || prev.city,
+        state: fields.state || prev.state,
         sourceLink: fields.sourceLink || prev.sourceLink,
         importedLogoUrl: fields.importedLogoUrl || prev.importedLogoUrl,
         importedHeroSlides:
@@ -206,6 +209,20 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
           </div>
 
           <div>
+            <label className={LABEL_CLASS}>Custom Domain (optional)</label>
+            <input
+              type="text"
+              className={FIELD_CLASS}
+              placeholder="www.yourbusiness.com"
+              value={form.customDomain || ""}
+              onChange={(e) => set("customDomain", e.target.value)}
+            />
+            <p className="text-white/35 text-xs mt-1.5">
+              Used for canonical URLs and SEO metadata when this site is published.
+            </p>
+          </div>
+
+          <div>
             <label className={LABEL_CLASS}>Site layout</label>
             <select
               className={`${FIELD_CLASS} cursor-pointer`}
@@ -214,7 +231,9 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
             >
               <option value="auto">Auto — pick from description &amp; company name</option>
               <option value="default">General business (gradient hero)</option>
-              <option value="plumbing">Plumbing &amp; drains (photo slideshow hero)</option>
+              <option value="plumbing">Plumbing — Classic navbar & hero</option>
+              <option value="plumbing-split">Plumbing — Split bar navbar & hero</option>
+              <option value="plumbing-boxed">Plumbing — Boxed glass navbar & hero</option>
             </select>
             <p className="text-white/35 text-xs mt-1.5">
               Auto looks for trade keywords (e.g. plumbing in the name). Choose a layout here to force the trade template.
@@ -299,15 +318,27 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
             />
           </div>
 
-          <div>
-            <label className={LABEL_CLASS}>City</label>
-            <input
-              type="text"
-              className={FIELD_CLASS}
-              placeholder="Boston, MA"
-              value={form.city}
-              onChange={(e) => set("city", e.target.value)}
-            />
+          <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={LABEL_CLASS}>City</label>
+              <input
+                type="text"
+                className={FIELD_CLASS}
+                placeholder="Everett"
+                value={form.city}
+                onChange={(e) => set("city", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className={LABEL_CLASS}>State / region</label>
+              <input
+                type="text"
+                className={FIELD_CLASS}
+                placeholder="WA"
+                value={form.state ?? ""}
+                onChange={(e) => set("state", e.target.value)}
+              />
+            </div>
           </div>
 
           <div>

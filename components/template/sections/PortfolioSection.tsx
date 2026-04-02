@@ -5,6 +5,7 @@ import type { GeneratedSiteContent } from "@/types";
 
 interface Props {
   content: GeneratedSiteContent;
+  styleVariant?: "cards" | "minimal-grid" | "split-feature";
 }
 
 const DEFAULT_PROJECT_GALLERIES: string[][] = [
@@ -33,7 +34,7 @@ function shortReview(serviceTitle: string): string {
   return "Excellent workmanship and clear updates throughout the whole job.";
 }
 
-export default function PortfolioSection({ content }: Props) {
+export default function PortfolioSection({ content, styleVariant = "cards" }: Props) {
   const [activeProjectIdx, setActiveProjectIdx] = useState<number | null>(null);
   const [activeSlideIdx, setActiveSlideIdx] = useState(0);
 
@@ -101,7 +102,7 @@ export default function PortfolioSection({ content }: Props) {
           <div className="accent-bar" style={{ margin: "0 auto 0" }} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className={styleVariant === "minimal-grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : styleVariant === "split-feature" ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"}>
           {cards.map((item, i) => (
             <button
               key={`${item.serviceType}-${i}`}
@@ -112,12 +113,13 @@ export default function PortfolioSection({ content }: Props) {
               }}
               style={{
                 position: "relative",
-                minHeight: "360px",
+                minHeight: styleVariant === "minimal-grid" ? "280px" : i === 0 && styleVariant === "split-feature" ? "420px" : "360px",
                 borderRadius: "18px",
                 overflow: "hidden",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-                border: "1px solid rgba(255,255,255,0.2)",
+                boxShadow: styleVariant === "minimal-grid" ? "0 4px 16px rgba(0,0,0,0.12)" : "0 8px 32px rgba(0,0,0,0.18)",
+                border: styleVariant === "minimal-grid" ? "1px solid rgba(15,23,42,0.08)" : "1px solid rgba(255,255,255,0.2)",
                 textAlign: "left",
+                gridColumn: i === 0 && styleVariant === "split-feature" ? "span 2 / span 2" : undefined,
               }}
               className="group transition-transform duration-200 hover:-translate-y-1"
             >
@@ -131,7 +133,10 @@ export default function PortfolioSection({ content }: Props) {
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: "linear-gradient(180deg, rgba(11,18,32,0.12) 35%, rgba(11,18,32,0.84) 100%)",
+                  background:
+                    styleVariant === "minimal-grid"
+                      ? "linear-gradient(180deg, rgba(11,18,32,0.06) 35%, rgba(11,18,32,0.62) 100%)"
+                      : "linear-gradient(180deg, rgba(11,18,32,0.12) 35%, rgba(11,18,32,0.84) 100%)",
                 }}
               />
 

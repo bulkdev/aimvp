@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "clean": "node -e \"const fs=require('fs'); ['.next','.next-dev-build','next-build-artifacts'].forEach((d)=>{ if (fs.existsSync(d)) fs.rmSync(d,{ recursive:true, force:true }); });\"",
+    "clean": "node -e \"const fs=require('fs'); ['.next','.next-dev-build','next-build-artifacts','next-build-artifacts-prod'].forEach((d)=>{ if (fs.existsSync(d)) fs.rmSync(d,{ recursive:true, force:true }); });\"",
     "dev": "next dev --turbopack",
     "dev:webpack": "next dev",
     "dev:clean": "npm run clean && next dev --turbopack",
