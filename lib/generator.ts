@@ -33,6 +33,17 @@ Always respond with valid JSON only — no markdown, no explanation, just the JS
   const parsed = JSON.parse(raw) as GeneratedSiteContent;
   // Always attach a theme (AI won't reliably generate color hex values)
   parsed.theme = pickThemeFromIntake(intake);
+  parsed.assets = {
+    ...parsed.assets,
+    heroSlides:
+      intake.importedHeroSlides && intake.importedHeroSlides.length > 0
+        ? intake.importedHeroSlides
+        : parsed.assets?.heroSlides,
+    portfolioProjects:
+      intake.importedPortfolioProjects && intake.importedPortfolioProjects.length > 0
+        ? intake.importedPortfolioProjects
+        : parsed.assets?.portfolioProjects,
+  };
   return parsed;
 }
 
@@ -151,6 +162,10 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
         heading: "Book a plumber or get a quote",
         subheading: `Tell us what's going on — we'll respond quickly and schedule the right technician for ${city} and nearby areas.`,
       },
+      assets: {
+        heroSlides: intake.importedHeroSlides,
+        portfolioProjects: intake.importedPortfolioProjects,
+      },
       theme: pickThemeFromIntake(intake),
     };
   }
@@ -178,6 +193,10 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
     contact: {
       heading: "Ready to Get Started?",
       subheading: `Reach out today and we'll get back to you promptly. Serving ${city} and surrounding areas.`,
+    },
+    assets: {
+      heroSlides: intake.importedHeroSlides,
+      portfolioProjects: intake.importedPortfolioProjects,
     },
     theme: pickThemeFromIntake(intake),
   };

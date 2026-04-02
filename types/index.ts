@@ -7,6 +7,9 @@ export interface IntakeFormData {
   companyName: string;
   businessDescription: string;
   sourceLink?: string;
+  importedHeroSlides?: string[];
+  importedPortfolioProjects?: string[][];
+  importedLogoUrl?: string;
   /** When set, picks the visual template; "auto" uses keyword inference. */
   siteTemplate?: SiteTemplateChoice;
   logoDataUrl?: string; // base64 data URL of uploaded logo
@@ -108,7 +111,16 @@ export interface EnrichLinkResponse {
   fields: Partial<
     Pick<
       IntakeFormData,
-      "companyName" | "businessDescription" | "phone" | "email" | "address" | "city" | "sourceLink"
+      | "companyName"
+      | "businessDescription"
+      | "phone"
+      | "email"
+      | "address"
+      | "city"
+      | "sourceLink"
+      | "importedHeroSlides"
+      | "importedPortfolioProjects"
+      | "importedLogoUrl"
     >
   >;
   notes?: string[];

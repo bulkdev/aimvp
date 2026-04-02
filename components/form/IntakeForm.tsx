@@ -105,7 +105,21 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
         address: fields.address || prev.address,
         city: fields.city || prev.city,
         sourceLink: fields.sourceLink || prev.sourceLink,
+        importedLogoUrl: fields.importedLogoUrl || prev.importedLogoUrl,
+        importedHeroSlides:
+          Array.isArray(fields.importedHeroSlides) && fields.importedHeroSlides.length
+            ? fields.importedHeroSlides
+            : prev.importedHeroSlides,
+        importedPortfolioProjects:
+          Array.isArray(fields.importedPortfolioProjects) && fields.importedPortfolioProjects.length
+            ? fields.importedPortfolioProjects
+            : prev.importedPortfolioProjects,
+        logoDataUrl: fields.importedLogoUrl || prev.logoDataUrl,
       }));
+
+      if (fields.importedLogoUrl) {
+        setLogoPreview(fields.importedLogoUrl);
+      }
 
       const note = Array.isArray(data?.notes) && data.notes.length
         ? data.notes.join(" ")

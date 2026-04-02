@@ -6,6 +6,17 @@ function extractTagContent(html: string, pattern: RegExp): string | undefined {
   return m?.[1]?.trim();
 }
 
+function toAbsoluteUrl(base: URL, value: string): string | undefined {
+  const raw = value.trim();
+  if (!raw) return undefined;
+  if (raw.startsWith("data:")) return raw;
+  try {
+    return new URL(raw, base).toString();
+  } catch {
+    return undefined;
+  }
+}
+
 function decodeHtmlEntities(text: string): string {
   return text
     .replace(/&amp;/g, "&")
@@ -32,6 +43,7 @@ function parseLocalBusinessJsonLd(html: string): {
   email?: string;
   streetAddress?: string;
   addressLocality?: string;
+  logo?: string;
 } {
   const scripts = Array.from(html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi))
     .map((m) => m[1]?.trim())
@@ -59,6 +71,7 @@ function parseLocalBusinessJsonLd(html: string): {
           email: node?.email,
           streetAddress: address?.streetAddress,
           addressLocality: address?.addressLocality,
+          logo: typeof node?.logo === "string" ? node.logo : node?.logo?.url,
         };
       }
     } catch {
@@ -67,6 +80,28 @@ function parseLocalBusinessJsonLd(html: string): {
   }
 
   return {};
+}
+
+function extractImageCandidates(html: string, base: URL): string[] {
+  const urls: string[] = [];
+  const push = (u?: string) => {
+    if (!u) return;
+    if (!/^https?:|^data:/.test(u)) return;
+    urls.push(u);
+  };
+
+  const ogImage = extractTagContent(html, /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+  push(toAbsoluteUrl(base, ogImage || ""));
+
+  const twitterImage = extractTagContent(html, /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
+  push(toAbsoluteUrl(base, twitterImage || ""));
+
+  for (const m of html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) {
+    push(toAbsoluteUrl(base, m[1]));
+  }
+
+  const unique = Array.from(new Set(urls));
+  return unique.filter((u) => !/sprite|icon|avatar|favicon/i.test(u)).slice(0, 16);
 }
 
 export async function POST(req: NextRequest) {
@@ -106,6 +141,7 @@ export async function POST(req: NextRequest) {
 
     const html = await res.text();
     const localBiz = parseLocalBusinessJsonLd(html);
+    const candidates = extractImageCandidates(html, parsed);
 
     const title =
       extractTagContent(html, /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ||
@@ -118,6 +154,24 @@ export async function POST(req: NextRequest) {
     const email = localBiz.email || firstEmail(html);
     const address = localBiz.streetAddress;
     const city = localBiz.addressLocality;
+    const logoUrl =
+      toAbsoluteUrl(parsed, localBiz.logo || "") ||
+      toAbsoluteUrl(
+        parsed,
+        extractTagContent(html, /<meta[^>]+property=["']og:logo["'][^>]+content=["']([^"']+)["']/i) || ""
+      ) ||
+      candidates[0] ||
+      "";
+    const heroSlides = candidates.slice(0, 4);
+    const portfolioImages = candidates.slice(4, 13);
+    const importedPortfolioProjects =
+      portfolioImages.length > 0
+        ? [
+            portfolioImages.slice(0, 3),
+            portfolioImages.slice(3, 6),
+            portfolioImages.slice(6, 9),
+          ].filter((g) => g.length > 0)
+        : [];
 
     const fields: EnrichLinkResponse["fields"] = {
       sourceLink: parsed.toString(),
@@ -127,6 +181,9 @@ export async function POST(req: NextRequest) {
       email: email || "",
       address: address || "",
       city: city || "",
+      importedLogoUrl: logoUrl,
+      importedHeroSlides: heroSlides,
+      importedPortfolioProjects,
     };
 
     const notes: string[] = [];
@@ -135,6 +192,9 @@ export async function POST(req: NextRequest) {
     }
     if (/instagram\.com|facebook\.com|maps\.google\./i.test(parsed.hostname)) {
       notes.push("Some social/profile pages limit scraping. You may need to fill missing fields manually.");
+    }
+    if (!fields.importedLogoUrl) {
+      notes.push("Could not confidently detect a logo from this link.");
     }
 
     return NextResponse.json<EnrichLinkResponse>({ fields, notes });
