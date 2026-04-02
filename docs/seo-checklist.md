@@ -5,7 +5,7 @@ Use this before enabling indexing on published pages.
 ## Environment
 
 - Set `NEXT_PUBLIC_APP_URL` to production domain (no localhost).
-- Set `NEXT_PUBLIC_ENABLE_PUBLIC_PAGES=true` only when ready.
+- Published `/site/*` is on by default; set `NEXT_PUBLIC_ENABLE_PUBLIC_PAGES=false` to hide it (e.g. staging).
 - Set `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`.
 - Optional: set `NEXT_PUBLIC_GA_ID` for pageview/lead tracking.
 

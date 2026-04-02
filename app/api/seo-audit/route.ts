@@ -17,7 +17,7 @@ export async function GET() {
   };
 
   const warnings: string[] = [];
-  if (!checks.publicPagesEnabled) warnings.push("Public SEO routes are disabled. Set NEXT_PUBLIC_ENABLE_PUBLIC_PAGES=true when ready.");
+  if (!checks.publicPagesEnabled) warnings.push("Public SEO routes are disabled (NEXT_PUBLIC_ENABLE_PUBLIC_PAGES=false). Remove or set to true to serve /site and sitemap.");
   if (!checks.appUrlConfigured) warnings.push("NEXT_PUBLIC_APP_URL is missing.");
   if (!checks.appUrlLooksProduction) warnings.push("NEXT_PUBLIC_APP_URL appears non-production.");
   if (!checks.googleVerificationConfigured) warnings.push("Google Search Console verification token missing.");

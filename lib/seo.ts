@@ -14,9 +14,9 @@ export function appBaseUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }
 
+/** Published `/site/*`, sitemap URLs, and robots allowlisting are on by default. Set `NEXT_PUBLIC_ENABLE_PUBLIC_PAGES=false` to disable (e.g. staging). */
 export function publicPagesEnabled(): boolean {
-  if (process.env.NODE_ENV !== "production") return true;
-  return process.env.NEXT_PUBLIC_ENABLE_PUBLIC_PAGES === "true";
+  return process.env.NEXT_PUBLIC_ENABLE_PUBLIC_PAGES !== "false";
 }
 
 export function buildPublishedBasePath(projectId: string): string {
