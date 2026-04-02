@@ -156,17 +156,6 @@ export default function PortfolioSection({ content, styleVariant = "cards" }: Pr
                 >
                   {item.serviceType}
                 </span>
-                <span
-                  style={{
-                    alignSelf: "flex-end",
-                    color: "rgba(255,255,255,0.88)",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    letterSpacing: "0.02em",
-                  }}
-                >
-                  View project photos
-                </span>
 
                 <div
                   style={{

@@ -48,6 +48,14 @@ export default function PlumbingHeroSection({
     content.assets?.heroTaglineLead?.trim() || defaultLeadFromTagline;
   const areaFromTagline = rawParts.length > 1 ? rawParts[rawParts.length - 1]! : "";
   const areaDisplay = loc || areaFromTagline;
+
+  /** Location line in eyebrow — 2× the accent size used for the lead so city/state reads larger. */
+  const locationEyebrowStyle = {
+    color: "color-mix(in srgb, var(--accent) 82%, #fff 18%)",
+    fontSize: "clamp(1.84rem, 4.2vw, 2.24rem)",
+    fontWeight: 800,
+    lineHeight: 1.15,
+  } as const;
   const slides =
     content.assets?.heroSlides && content.assets.heroSlides.length > 0
       ? content.assets.heroSlides.map((src, i) => ({ src, alt: `Hero slide ${i + 1}` }))
@@ -172,15 +180,7 @@ export default function PlumbingHeroSection({
             {taglineLead && areaDisplay ? (
               <>
                 <span>{taglineLead} · </span>
-                <span
-                  style={{
-                    color: "color-mix(in srgb, var(--accent) 82%, #fff 18%)",
-                    fontSize: "clamp(0.92rem, 2.1vw, 1.12rem)",
-                    fontWeight: 800,
-                  }}
-                >
-                  {areaDisplay}
-                </span>
+                <span style={locationEyebrowStyle}>{areaDisplay}</span>
               </>
             ) : taglineLead ? (
               <span
@@ -193,15 +193,7 @@ export default function PlumbingHeroSection({
                 {taglineLead}
               </span>
             ) : areaDisplay ? (
-              <span
-                style={{
-                  color: "color-mix(in srgb, var(--accent) 82%, #fff 18%)",
-                  fontSize: "clamp(0.92rem, 2.1vw, 1.12rem)",
-                  fontWeight: 800,
-                }}
-              >
-                {areaDisplay}
-              </span>
+              <span style={locationEyebrowStyle}>{areaDisplay}</span>
             ) : (
               <span
                 style={{
