@@ -72,10 +72,7 @@ export default function GoogleReviewsSection({ content }: Props) {
   const reviews = (content.assets?.manualReviews?.length ? content.assets.manualReviews : DEFAULT_REVIEWS)
     .filter((r) => r.text?.trim())
     .slice(0, 12);
-  if (reviews.length === 0) return null;
 
-  const avg = reviews.reduce((sum, r) => sum + Math.max(1, Math.min(5, r.rating || 5)), 0) / reviews.length;
-  const activeReview = reviews[Math.min(slideIndex, reviews.length - 1)];
   const desktopTrackReviews = useMemo(() => [...reviews, ...reviews], [reviews]);
 
   useEffect(() => {
@@ -85,6 +82,10 @@ export default function GoogleReviewsSection({ content }: Props) {
     }, 4500);
     return () => window.clearInterval(id);
   }, [reviews.length]);
+
+  if (reviews.length === 0) return null;
+
+  const avg = reviews.reduce((sum, r) => sum + Math.max(1, Math.min(5, r.rating || 5)), 0) / reviews.length;
 
   function prevMobile() {
     setSlideIndex((idx) => (idx <= 0 ? reviews.length - 1 : idx - 1));
