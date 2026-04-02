@@ -6,6 +6,7 @@ export type SiteTemplateChoice = "auto" | "default" | "plumbing";
 export interface IntakeFormData {
   companyName: string;
   businessDescription: string;
+  sourceLink?: string;
   /** When set, picks the visual template; "auto" uses keyword inference. */
   siteTemplate?: SiteTemplateChoice;
   logoDataUrl?: string; // base64 data URL of uploaded logo
@@ -101,4 +102,14 @@ export interface GenerateResponse {
 export interface ApiError {
   error: string;
   details?: string;
+}
+
+export interface EnrichLinkResponse {
+  fields: Partial<
+    Pick<
+      IntakeFormData,
+      "companyName" | "businessDescription" | "phone" | "email" | "address" | "city" | "sourceLink"
+    >
+  >;
+  notes?: string[];
 }

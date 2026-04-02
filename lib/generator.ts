@@ -54,6 +54,7 @@ Generate a professional website content JSON for this local business:
 Company Name: ${intake.companyName}
 Business Description: ${intake.businessDescription}
 Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade from text; plumbing = plumber-style copy and structure)
+Source Link (optional): ${intake.sourceLink || "N/A"}
 ${optionals}
 Booking: ${intake.bookingEnabled ? "Yes" : "No"}
 Payment: ${intake.paymentEnabled ? "Yes" : "No"}

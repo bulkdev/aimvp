@@ -17,6 +17,7 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
   const [form, setForm] = useState<IntakeFormData>({
     companyName: "",
     businessDescription: "",
+    sourceLink: "",
     siteTemplate: "auto",
     logoDataUrl: undefined,
     phone: "",
@@ -28,6 +29,9 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
   });
 
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [importLink, setImportLink] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  const [importNote, setImportNote] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof IntakeFormData, string>>>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -71,6 +75,49 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
     onSubmit(form);
   }
 
+  async function handleImportFromLink() {
+    const url = importLink.trim();
+    if (!url) {
+      setImportNote("Enter a link first.");
+      return;
+    }
+    setIsImporting(true);
+    setImportNote("");
+    try {
+      const res = await fetch("/api/enrich-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportNote(data?.error || "Could not import this link.");
+        return;
+      }
+
+      const fields = data?.fields ?? {};
+      setForm((prev) => ({
+        ...prev,
+        companyName: fields.companyName || prev.companyName,
+        businessDescription: fields.businessDescription || prev.businessDescription,
+        phone: fields.phone || prev.phone,
+        email: fields.email || prev.email,
+        address: fields.address || prev.address,
+        city: fields.city || prev.city,
+        sourceLink: fields.sourceLink || prev.sourceLink,
+      }));
+
+      const note = Array.isArray(data?.notes) && data.notes.length
+        ? data.notes.join(" ")
+        : "Imported details from link. Please review and adjust before generating.";
+      setImportNote(note);
+    } catch {
+      setImportNote("Import failed. Try another website link.");
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="card-glass rounded-2xl p-6 md:p-8 space-y-6">
 
@@ -82,6 +129,28 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
         </div>
 
         <div className="space-y-4">
+          <div>
+            <label className={LABEL_CLASS}>Import Details from Link (optional)</label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="url"
+                className={FIELD_CLASS}
+                placeholder="Paste website, Google Business, Instagram, or Facebook link"
+                value={importLink}
+                onChange={(e) => setImportLink(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => void handleImportFromLink()}
+                disabled={isImporting}
+                className="sm:w-auto w-full bg-white/10 border border-white/20 hover:bg-white/15 text-white text-sm rounded-xl px-4 py-3 disabled:opacity-60"
+              >
+                {isImporting ? "Importing..." : "Import"}
+              </button>
+            </div>
+            {importNote && <p className="text-white/45 text-xs mt-1.5">{importNote}</p>}
+          </div>
+
           {/* Company Name */}
           <div>
             <label className={LABEL_CLASS}>
