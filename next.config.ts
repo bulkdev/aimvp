@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  distDir: "next-build-artifacts",
+  // Vercel expects Next build output in ".next". Keep custom dist locally only.
+  distDir: process.env.VERCEL ? ".next" : "next-build-artifacts",
   webpack: (config, { dev }) => {
     // On some Windows setups, webpack's filesystem cache can lose chunk files
     // during fast refresh and cause "Cannot find module './xxx.js'" errors.
