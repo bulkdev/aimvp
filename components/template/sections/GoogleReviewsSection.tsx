@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { GeneratedSiteContent } from "@/types";
 
 interface Props {
@@ -67,13 +67,39 @@ function StorefrontIcon({ size = 46 }: { size?: number }) {
   );
 }
 
+const DESKTOP_GAP_PX = 12;
+
 export default function GoogleReviewsSection({ content }: Props) {
   const [slideIndex, setSlideIndex] = useState(0);
+  const desktopViewportRef = useRef<HTMLDivElement>(null);
+  const [desktopCardWidth, setDesktopCardWidth] = useState(188);
+  const [desktopStride, setDesktopStride] = useState(200);
+
   const reviews = (content.assets?.manualReviews?.length ? content.assets.manualReviews : DEFAULT_REVIEWS)
     .filter((r) => r.text?.trim())
     .slice(0, 12);
 
   const desktopTrackReviews = useMemo(() => [...reviews, ...reviews], [reviews]);
+
+  useLayoutEffect(() => {
+    function measure() {
+      const node = desktopViewportRef.current;
+      if (!node) return;
+      const w = node.getBoundingClientRect().width;
+      if (w <= 0) return;
+      const inner = (w - 2 * DESKTOP_GAP_PX) / 3;
+      const cardWidth = Math.max(140, inner);
+      setDesktopCardWidth(cardWidth);
+      setDesktopStride(cardWidth + DESKTOP_GAP_PX);
+    }
+
+    measure();
+    const node = desktopViewportRef.current;
+    if (!node) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (reviews.length <= 1) return;
@@ -97,11 +123,13 @@ export default function GoogleReviewsSection({ content }: Props) {
 
   return (
     <section id="reviews" style={{ background: "#ffffff", padding: "28px 0 36px" }}>
-      <div className="px-4 md:px-8 lg:px-14 max-w-screen-2xl mx-auto">
-        <div className="hidden md:flex gap-3 pb-2 items-stretch">
+      <div className="px-4 md:px-8 lg:px-14 max-w-screen-2xl mx-auto w-full">
+        <div className="hidden md:flex gap-3 pb-2 items-stretch w-full min-w-0">
           <div
+            className="shrink-0"
             style={{
-              minWidth: "220px",
+              width: "min(260px, 30vw)",
+              minWidth: "200px",
               minHeight: "220px",
               background: "transparent",
               border: "none",
@@ -149,12 +177,12 @@ export default function GoogleReviewsSection({ content }: Props) {
             </a>
           </div>
 
-          <div style={{ width: "588px", overflow: "hidden" }}>
+          <div ref={desktopViewportRef} className="flex-1 min-w-0 overflow-hidden">
             <div
               style={{
                 display: "flex",
-                gap: "12px",
-                transform: `translateX(-${(slideIndex % reviews.length) * 200}px)`,
+                gap: DESKTOP_GAP_PX,
+                transform: `translateX(-${(slideIndex % reviews.length) * desktopStride}px)`,
                 transition: "transform 480ms ease",
                 willChange: "transform",
               }}
@@ -165,7 +193,8 @@ export default function GoogleReviewsSection({ content }: Props) {
                   <article
                     key={`${r.reviewerName}-${i}`}
                     style={{
-                      flex: "0 0 188px",
+                      flex: `0 0 ${desktopCardWidth}px`,
+                      width: desktopCardWidth,
                       minHeight: "220px",
                       background: "#f7f8fa",
                       border: "1px solid #d9e0e8",

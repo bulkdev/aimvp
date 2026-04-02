@@ -234,9 +234,10 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
               <option value="plumbing">Plumbing — Classic navbar & hero</option>
               <option value="plumbing-split">Plumbing — Split bar navbar & hero</option>
               <option value="plumbing-boxed">Plumbing — Boxed glass navbar & hero</option>
+              <option value="super-service">Super Service — Multi-trade HVAC/plumbing style</option>
             </select>
             <p className="text-white/35 text-xs mt-1.5">
-              Auto looks for trade keywords (e.g. plumbing in the name). Choose a layout here to force the trade template.
+              Auto looks for trade keywords (e.g. plumbing or HVAC). Choose a layout here to force a template.
             </p>
           </div>
 

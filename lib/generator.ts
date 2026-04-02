@@ -66,7 +66,7 @@ Generate a professional website content JSON for this local business:
 
 Company Name: ${intake.companyName}
 Business Description: ${intake.businessDescription}
-Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade from text; plumbing/plumbing-split/plumbing-boxed = plumber-style copy and structure)
+Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; super-service = multi-trade HVAC/plumbing style with service areas)
 Source Link (optional): ${intake.sourceLink || "N/A"}
 ${optionals}
 Booking: ${intake.bookingEnabled ? "Yes" : "No"}
@@ -111,25 +111,52 @@ Rules:
 - Use only real information provided — do not invent addresses, phone numbers, or credentials
 - When both city and state/region are provided, use them together in natural copy (e.g. "Everett, WA") in hero, about, FAQs, and contact where location matters
 - Icon names must be valid lucide-react icons (e.g., "Star", "Shield", "Clock", "Wrench", "Home", "Heart", "Zap", "CheckCircle", "Users", "Award", "Truck", "Settings")
-${plumbingPromptExtra(intake)}
+- For super-service layout, also include "assets": { "serviceAreas": ["City, ST", ...] } with 8–16 plausible service area names for the region described (no fake addresses).
+${tradePromptExtra(intake)}
 `;
 }
 
-function plumbingPromptExtra(intake: IntakeFormData): string {
-  const isPlumbing =
-    resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName) ===
-    "plumbing";
-  if (!isPlumbing) return "";
-
-  return `
+function tradePromptExtra(intake: IntakeFormData): string {
+  const v = resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName);
+  if (v === "superService") {
+    return `
+Trade-specific (multi-trade home services — HVAC, plumbing, drains): Sound like a trusted local contractor (see superservicetoday.com-style positioning, but original wording).
+- Tagline: memorable one-liner (urgency + trust). Avoid copying trademarked slogans.
+- Hero: headline positioning the business as a top local plumbing, heating, cooling, and drain provider for the described area.
+- services: Prefer four clear trade lanes when relevant — e.g. Plumbing, Heating, Cooling, Drain & Sewer — with honest scope descriptions (diagnostics, maintenance plans, same-day where applicable).
+- about.highlights: industry-appropriate (licensed & insured, emergency availability, stocked trucks, satisfaction focus) without fake awards or BBB claims unless provided in intake.
+- assets.serviceAreas: array of city/region names matching the business location context.`;
+  }
+  if (v === "plumbing") {
+    return `
 Trade-specific (plumbing / drains): Write like a local licensed plumber — not a generic SaaS landing page.
 - Hero headline: emphasize fast response, emergencies, installs, or leak repair (pick what fits the description).
 - Tagline: short trust cue (e.g. licensed & insured, 24/7, serving the area).
 - Services: use trade terms (e.g. drain cleaning, repiping, fixture install, water heater) when relevant.
 - Avoid startup jargon ("scale", "platform", "solutions suite").`;
+  }
+  return "";
 }
 
 // ─── Mock generator (used when no OpenAI key is configured) ───────────────────
+
+function mockServiceAreas(intake: IntakeFormData, city: string): string[] {
+  const st = intake.state?.trim();
+  const base = intake.city?.split(",")[0]?.trim() || city.split(",")[0]?.trim() || "Local";
+  const primary = st && base ? `${base}, ${st}` : city;
+  const pool = [
+    primary,
+    `${base} area`,
+    "North County",
+    "South County",
+    "East Side",
+    "West Side",
+    "Downtown",
+    "Greater metro",
+    "Nearby suburbs",
+  ];
+  return [...new Set(pool)].filter(Boolean).slice(0, 12);
+}
 
 function generateMock(intake: IntakeFormData): GeneratedSiteContent {
   const name = intake.companyName;
@@ -139,8 +166,67 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
   // Derive 3 plausible services from the description keywords
   const services = deriveServices(intake, name);
   const faqs = deriveFaqs(intake.businessDescription, name, city);
+  const variant = resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName);
 
-  if (resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName) === "plumbing") {
+  if (variant === "superService") {
+    const tradeServices: ServiceItem[] = [
+      {
+        title: "Plumbing",
+        description: `Kitchen and bath plumbing, water heaters, leak repair, and fixture installs. Same-day dispatch when you need help fast in ${city}.`,
+        icon: "Droplets",
+      },
+      {
+        title: "Heating",
+        description: `Furnace and boiler diagnostics, repairs, and safety checks — keep your home warm when it matters most.`,
+        icon: "Flame",
+      },
+      {
+        title: "Cooling",
+        description: `AC tune-ups, repairs, and performance checks so you stay comfortable through the hottest days.`,
+        icon: "Snowflake",
+      },
+      {
+        title: "Drain & Sewer",
+        description: `Clear tough clogs, camera inspections, and sewer line solutions with upfront explanations and options.`,
+        icon: "Waves",
+      },
+    ];
+    return {
+      brandName: name,
+      tagline: `Whatever It Takes! · Serving ${city}`,
+      hero: {
+        title: `#1 Local Plumbing, Heating, Cooling & Drain Experts`,
+        subtitle: `${name} keeps your home comfortable year-round — honest recommendations, clear pricing, and technicians who respect your time and your home across ${city} and nearby communities.`,
+        ctaText: "Book Online",
+        ctaSecondaryText: "Call Now",
+      },
+      services: tradeServices,
+      about: {
+        heading: "Why Choose Us?",
+        body: `Homeowners across ${city} rely on ${name} for straight answers and workmanship they can feel good about. We're licensed and insured, our trucks are stocked for common repairs, and we explain every option before any work begins.\n\nFrom emergency no-heat calls to planned upgrades, we show up ready to solve the problem — not upsell you on things you don't need. That's how we've earned repeat business and referrals in neighborhoods like yours.`,
+        highlights: [
+          "Fully licensed & insured",
+          "24/7 emergency service",
+          "Friendly, respectful technicians",
+          "Fully stocked service trucks",
+          "Satisfaction guaranteed",
+        ],
+      },
+      faqs,
+      contact: {
+        heading: "Have a question? Get in touch",
+        subheading: `Request service online or call — we'll schedule the right technician for your home in ${city}.`,
+      },
+      assets: {
+        heroSlides: intake.importedHeroSlides,
+        portfolioProjects: intake.importedPortfolioProjects,
+        serviceAreas: mockServiceAreas(intake, city),
+      },
+      theme: pickThemeFromIntake(intake),
+    };
+  }
+
+  if (variant === "plumbing") {
     return {
       brandName: name,
       tagline: `Licensed plumbers · ${plumbingTaglineArea}`,

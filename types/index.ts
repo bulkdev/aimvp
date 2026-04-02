@@ -6,7 +6,9 @@ export type SiteTemplateChoice =
   | "default"
   | "plumbing"
   | "plumbing-split"
-  | "plumbing-boxed";
+  | "plumbing-boxed"
+  /** Multi-trade HVAC/plumbing style: promo bar, Book Online, trade cards, areas grid */
+  | "super-service";
 
 export interface IntakeFormData {
   companyName: string;

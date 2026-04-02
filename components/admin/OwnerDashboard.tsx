@@ -318,6 +318,7 @@ export default function OwnerDashboard({ project }: Props) {
               <option value="plumbing" className="text-slate-900">Template: Plumbing — Classic nav & hero</option>
               <option value="plumbing-split" className="text-slate-900">Template: Plumbing — Split bar nav & hero</option>
               <option value="plumbing-boxed" className="text-slate-900">Template: Plumbing — Boxed glass nav & hero</option>
+              <option value="super-service" className="text-slate-900">Template: Super Service — HVAC/plumbing</option>
             </select>
             <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
             <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" />

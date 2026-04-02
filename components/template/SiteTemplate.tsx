@@ -16,6 +16,15 @@ import PaymentSection from "./sections/PaymentSection";
 import FooterSection from "./sections/FooterSection";
 import CtaBanner from "./sections/CtaBanner";
 import GoogleReviewsSection from "./sections/GoogleReviewsSection";
+import {
+  SuperServiceTopBar,
+  SuperServiceNavbar,
+  SuperServiceHero,
+  SuperServiceTradeCards,
+  SuperServiceWhySection,
+  SuperServiceMembership,
+  SuperServiceAreasGrid,
+} from "./sections/SuperServiceSections";
 import SeoAnalytics from "@/components/seo/SeoAnalytics";
 import ScrollReveal from "./ScrollReveal";
 
@@ -114,7 +123,10 @@ export default function SiteTemplate({ project }: Props) {
       "@type": "Service",
       name: serviceName,
       areaServed: (content.assets?.serviceAreas || []).slice(0, 20),
-      provider: { "@type": variant === "plumbing" ? "Plumber" : "LocalBusiness", name: content.brandName },
+      provider: {
+        "@type": variant === "plumbing" ? "Plumber" : "LocalBusiness",
+        name: content.brandName,
+      },
     }));
   const localBusinessSchema = {
     "@context": "https://schema.org",
@@ -209,7 +221,9 @@ export default function SiteTemplate({ project }: Props) {
   ];
   const sectionMap: Record<SectionKey, React.ReactNode> = {
     hero:
-      variant === "plumbing" ? (
+      variant === "superService" ? (
+        <SuperServiceHero content={content} intake={intake} />
+      ) : variant === "plumbing" ? (
         <PlumbingHeroSection
           content={content}
           intake={intake}
@@ -219,13 +233,24 @@ export default function SiteTemplate({ project }: Props) {
       ) : (
         <HeroSection content={content} intake={intake} />
       ),
-    services: <ServicesSection content={content} intake={intake} isPlumbing={variant === "plumbing"} />,
+    services:
+      variant === "superService" ? (
+        <SuperServiceTradeCards content={content} intake={intake} />
+      ) : (
+        <ServicesSection content={content} intake={intake} isPlumbing={variant === "plumbing"} />
+      ),
     portfolio: <PortfolioSection content={content} styleVariant={effectiveDesign?.ourWork ?? "cards"} />,
-    about: <AboutSection content={content} />,
+    about:
+      variant === "superService" ? <SuperServiceWhySection content={content} /> : <AboutSection content={content} />,
     booking: intake.bookingEnabled ? <BookingSection content={content} /> : null,
     faq: <FaqSection content={content} />,
     reviews: <GoogleReviewsSection content={content} />,
-    cta: <CtaBanner content={content} intake={intake} />,
+    cta:
+      variant === "superService" ? (
+        <SuperServiceMembership />
+      ) : (
+        <CtaBanner content={content} intake={intake} />
+      ),
     payment: intake.paymentEnabled ? <PaymentSection content={content} /> : null,
     contact: <ContactSection content={content} intake={intake} />,
   };
@@ -335,12 +360,19 @@ export default function SiteTemplate({ project }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <>
-        <NavbarSection
-          content={content}
-          intake={intake}
-          isPlumbing={variant === "plumbing"}
-          styleVariant={effectiveDesign?.navbar ?? "standard"}
-        />
+        {variant === "superService" ? (
+          <>
+            <SuperServiceTopBar />
+            <SuperServiceNavbar content={content} intake={intake} />
+          </>
+        ) : (
+          <NavbarSection
+            content={content}
+            intake={intake}
+            isPlumbing={variant === "plumbing"}
+            styleVariant={effectiveDesign?.navbar ?? "standard"}
+          />
+        )}
         {normalizedOrder.map((key, i) => {
           const node = sectionMap[key];
           if (node == null) return null;
@@ -350,7 +382,12 @@ export default function SiteTemplate({ project }: Props) {
             </ScrollReveal>
           );
         })}
-        <ScrollReveal delayMs={normalizedOrder.length * 65}>
+        {variant === "superService" && (
+          <ScrollReveal delayMs={normalizedOrder.length * 65}>
+            <SuperServiceAreasGrid content={content} />
+          </ScrollReveal>
+        )}
+        <ScrollReveal delayMs={(normalizedOrder.length + (variant === "superService" ? 1 : 0)) * 65}>
           <FooterSection content={content} intake={intake} />
         </ScrollReveal>
       </>

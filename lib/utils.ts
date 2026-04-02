@@ -55,16 +55,26 @@ export const DEFAULT_THEMES: Record<string, SiteTheme> = {
     fontBody: "'DM Sans', system-ui, sans-serif",
     style: "bold",
   },
+  /** Multi-trade home services: navy + warm orange (HVAC/plumbing contractor style) */
+  superService: {
+    primaryColor: "#0c1e3d",
+    secondaryColor: "#1a3a5c",
+    accentColor: "#e85d04",
+    fontHeading: "'Oswald', 'Arial Narrow', sans-serif",
+    fontBody: "'DM Sans', system-ui, sans-serif",
+    style: "bold",
+  },
 };
 
 /**
  * Theme for a full intake (respects explicit site template + description).
  */
 export function pickThemeFromIntake(intake: IntakeFormData): SiteTheme {
-  if (
-    resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName) ===
-    "plumbing"
-  ) {
+  const v = resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName);
+  if (v === "superService") {
+    return DEFAULT_THEMES.superService;
+  }
+  if (v === "plumbing") {
     return DEFAULT_THEMES.plumbing;
   }
   return pickTheme(intake.businessDescription);
