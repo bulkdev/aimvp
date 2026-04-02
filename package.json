@@ -1,0 +1,35 @@
+{
+  "name": "ai-website-builder",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "clean": "node -e \"const fs=require('fs'); ['.next','.next-dev-build','next-build-artifacts'].forEach((d)=>{ if (fs.existsSync(d)) fs.rmSync(d,{ recursive:true, force:true }); });\"",
+    "dev": "next dev --turbopack",
+    "dev:webpack": "next dev",
+    "dev:clean": "npm run clean && next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.0.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "next": "^15.5.14",
+    "openai": "^4.77.0",
+    "postcss": "^8",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.5.4",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "^15.5.14"
+  }
+}
