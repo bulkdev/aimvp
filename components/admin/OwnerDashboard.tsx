@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import type { Project, ServiceItem, SiteTheme, SiteTemplateChoice } from "@/types";
+import { fileToCompressedDataUrl } from "@/lib/clientImage";
 
 interface Props {
   project: Project;
@@ -79,15 +80,6 @@ function randomTheme(): SiteTheme {
     fontBody: fonts[Math.floor(Math.random() * fonts.length)],
     style: styles[Math.floor(Math.random() * styles.length)],
   };
-}
-
-async function fileToDataUrl(file: File): Promise<string> {
-  return await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
 }
 
 export default function OwnerDashboard({ project }: Props) {
@@ -204,19 +196,19 @@ export default function OwnerDashboard({ project }: Props) {
 
   async function addHeroFiles(files: FileList | null) {
     if (!files?.length) return;
-    const urls = await Promise.all(Array.from(files).map(fileToDataUrl));
+    const urls = await Promise.all(Array.from(files).map((f) => fileToCompressedDataUrl(f)));
     setHeroSlides((prev) => [...prev, ...urls]);
   }
 
   async function setServicePhoto(serviceTitle: string, files: FileList | null) {
     if (!files?.[0]) return;
-    const url = await fileToDataUrl(files[0]);
+    const url = await fileToCompressedDataUrl(files[0]);
     setServiceImages((prev) => ({ ...prev, [serviceTitle.trim().toLowerCase()]: url }));
   }
 
   async function addProjectPhotos(projectIdx: number, files: FileList | null) {
     if (!files?.length) return;
-    const urls = await Promise.all(Array.from(files).map(fileToDataUrl));
+    const urls = await Promise.all(Array.from(files).map((f) => fileToCompressedDataUrl(f)));
     setProjects((prev) => prev.map((p, i) => (i === projectIdx ? { ...p, photos: [...p.photos, ...urls] } : p)));
   }
 
@@ -280,10 +272,13 @@ export default function OwnerDashboard({ project }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) {
+        if (res.status === 413) throw new Error("Payload too large — use fewer or smaller images.");
+        throw new Error("Failed");
+      }
       setMsg("Saved successfully.");
-    } catch {
-      setMsg("Save failed.");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Save failed.");
     } finally {
       setSaving(false);
     }

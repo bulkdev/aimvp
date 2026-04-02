@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
   // Keep dev and prod artifacts isolated to avoid manifest shape mismatches.
   // `next start` only supports production build output.
   distDir: process.env.VERCEL ? ".next" : isProd ? "next-build-artifacts-prod" : "next-build-artifacts",
+  experimental: {
+    // Large JSON bodies (e.g. many base64 images in project PATCH). Platform may still cap requests.
+    serverActions: { bodySizeLimit: "25mb" },
+    middlewareClientMaxBodySize: "25mb",
+  },
   webpack: (config, { dev }) => {
     // On some Windows setups, webpack's filesystem cache can lose chunk files
     // during fast refresh and cause "Cannot find module './xxx.js'" errors.

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Project, ServiceItem, SiteTheme, SiteTemplateChoice } from "@/types";
+import { fileToCompressedDataUrl } from "@/lib/clientImage";
 
 interface Props { project: Project; }
 
@@ -79,15 +80,6 @@ function randomTheme(): SiteTheme {
     fontBody: body,
     style: styles[Math.floor(Math.random() * styles.length)],
   };
-}
-
-async function fileToDataUrl(file: File): Promise<string> {
-  return await new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result || ""));
-    r.onerror = () => reject(new Error("Failed to read image"));
-    r.readAsDataURL(file);
-  });
 }
 
 export default function AdminEditor({ project }: Props) {
@@ -296,10 +288,15 @@ export default function AdminEditor({ project }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        if (res.status === 413) {
+          throw new Error("Payload too large — try fewer or smaller images, then save again.");
+        }
+        throw new Error("Failed to save");
+      }
       setMessage("Saved. Refresh preview to see updates.");
-    } catch {
-      setMessage("Could not save changes.");
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Could not save changes.");
     } finally {
       setIsSaving(false);
     }
@@ -307,19 +304,19 @@ export default function AdminEditor({ project }: Props) {
 
   async function addHeroSlides(files: FileList | null) {
     if (!files?.length) return;
-    const urls = await Promise.all(Array.from(files).map(fileToDataUrl));
+    const urls = await Promise.all(Array.from(files).map((f) => fileToCompressedDataUrl(f)));
     setHeroSlides((prev) => [...prev, ...urls]);
   }
 
   async function setServiceImage(serviceTitle: string, files: FileList | null) {
     if (!files?.[0]) return;
-    const dataUrl = await fileToDataUrl(files[0]);
+    const dataUrl = await fileToCompressedDataUrl(files[0]);
     setServiceImages((prev) => ({ ...prev, [serviceTitle.trim().toLowerCase()]: dataUrl }));
   }
 
   async function addProjectPhotos(projectIdx: number, files: FileList | null) {
     if (!files?.length) return;
-    const urls = await Promise.all(Array.from(files).map(fileToDataUrl));
+    const urls = await Promise.all(Array.from(files).map((f) => fileToCompressedDataUrl(f)));
     setProjects((prev) =>
       prev.map((project, idx) =>
         idx === projectIdx ? { ...project, photos: [...project.photos, ...urls] } : project
