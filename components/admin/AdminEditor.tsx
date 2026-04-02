@@ -2,6 +2,13 @@
 
 import { useMemo, useState } from "react";
 import type { Project, ServiceItem, SiteTheme, SiteTemplateChoice } from "@/types";
+
+function initialHeroTaglineLead(project: Project): string {
+  const saved = project.content.assets?.heroTaglineLead?.trim();
+  if (saved) return saved;
+  const parts = project.content.tagline.split("·").map((p) => p.trim()).filter(Boolean);
+  return parts.length > 1 ? parts.slice(0, -1).join(" · ") : parts[0] || "";
+}
 import { fileToCompressedDataUrl } from "@/lib/clientImage";
 
 interface Props { project: Project; }
@@ -96,6 +103,7 @@ export default function AdminEditor({ project }: Props) {
   const [address, setAddress] = useState(project.intake.address ?? "");
   const [heroTitle, setHeroTitle] = useState(project.content.hero.title);
   const [heroSubtitle, setHeroSubtitle] = useState(project.content.hero.subtitle);
+  const [heroTaglineLead, setHeroTaglineLead] = useState(() => initialHeroTaglineLead(project));
   const [heroSlides, setHeroSlides] = useState<string[]>(project.content.assets?.heroSlides ?? []);
   const [theme, setTheme] = useState<SiteTheme>(project.content.theme);
   const [layoutVariant, setLayoutVariant] = useState<"standard" | "services-first" | "about-first">(
@@ -235,6 +243,7 @@ export default function AdminEditor({ project }: Props) {
           },
           assets: {
             ...project.content.assets,
+            heroTaglineLead: heroTaglineLead.trim(),
             heroSlides,
             serviceCardImages: serviceImages,
             socialLinks: {
@@ -361,6 +370,12 @@ export default function AdminEditor({ project }: Props) {
 
         <input className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={heroTitle} onChange={(e)=>setHeroTitle(e.target.value)} placeholder="Hero title" />
         <textarea className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 h-24" value={heroSubtitle} onChange={(e)=>setHeroSubtitle(e.target.value)} placeholder="Hero subtitle" />
+        <input
+          className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+          value={heroTaglineLead}
+          onChange={(e) => setHeroTaglineLead(e.target.value)}
+          placeholder="Hero tagline lead (e.g. Licensed plumbers — shown before city/state)"
+        />
 
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">

@@ -69,6 +69,13 @@ function StorefrontIcon({ size = 46 }: { size?: number }) {
 
 const DESKTOP_GAP_PX = 12;
 
+function reviewLinkHref(url?: string): string | undefined {
+  const u = url?.trim();
+  if (!u || u === "#") return undefined;
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  return undefined;
+}
+
 export default function GoogleReviewsSection({ content }: Props) {
   const [slideIndex, setSlideIndex] = useState(0);
   const desktopViewportRef = useRef<HTMLDivElement>(null);
@@ -189,6 +196,47 @@ export default function GoogleReviewsSection({ content }: Props) {
             >
               {desktopTrackReviews.map((r, i) => {
                 const rating = Math.max(1, Math.min(5, Math.round(r.rating || 5)));
+                const reviewHref = reviewLinkHref(r.reviewUrl);
+                const headerRow = (
+                  <>
+                    <div
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        borderRadius: "999px",
+                        background: "var(--accent)",
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 700,
+                        fontSize: "0.82rem",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {(r.avatarLetter || r.reviewerName?.charAt(0) || "R").toUpperCase()}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "#1f2937",
+                          fontWeight: 700,
+                          fontSize: "0.86rem",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {r.reviewerName}
+                      </p>
+                      <p style={{ margin: 0, color: "#6b7280", fontSize: "0.74rem" }}>{r.reviewAge || ""}</p>
+                    </div>
+                    <div style={{ marginLeft: "auto", flexShrink: 0 }}>
+                      <GoogleGIcon />
+                    </div>
+                  </>
+                );
                 return (
                   <article
                     key={`${r.reviewerName}-${i}`}
@@ -205,65 +253,29 @@ export default function GoogleReviewsSection({ content }: Props) {
                       flexDirection: "column",
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                      <div
+                    {reviewHref ? (
+                      <a
+                        href={reviewHref}
+                        target="_blank"
+                        rel="noreferrer"
                         style={{
-                          width: "30px",
-                          height: "30px",
-                          borderRadius: "999px",
-                          background: "var(--accent)",
-                          color: "#fff",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 700,
-                          fontSize: "0.82rem",
+                          gap: "8px",
+                          marginBottom: "6px",
+                          textDecoration: "none",
+                          color: "inherit",
                         }}
                       >
-                        {(r.avatarLetter || r.reviewerName?.charAt(0) || "R").toUpperCase()}
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <p
-                          style={{
-                            margin: 0,
-                            color: "#1f2937",
-                            fontWeight: 700,
-                            fontSize: "0.86rem",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          {r.reviewerName}
-                        </p>
-                        <p style={{ margin: 0, color: "#6b7280", fontSize: "0.74rem" }}>{r.reviewAge || ""}</p>
-                      </div>
-                      <div style={{ marginLeft: "auto" }}>
-                        <GoogleGIcon />
-                      </div>
-                    </div>
+                        {headerRow}
+                      </a>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>{headerRow}</div>
+                    )}
                     <p style={{ margin: "0 0 6px", color: "#f59e0b", fontSize: "0.8rem", letterSpacing: "0.04em" }}>
                       {"★".repeat(rating)}
                     </p>
                     <p style={{ margin: 0, color: "#1f2937", fontSize: "0.88rem", lineHeight: 1.45 }}>{r.text}</p>
-                    {r.reviewUrl && r.reviewUrl !== "#" && (
-                      <a
-                        href={r.reviewUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          marginTop: "auto",
-                          paddingTop: "8px",
-                          display: "inline-block",
-                          color: "#2563eb",
-                          fontSize: "0.78rem",
-                          fontWeight: 700,
-                          textDecoration: "none",
-                        }}
-                      >
-                        View original
-                      </a>
-                    )}
                   </article>
                 );
               })}
@@ -333,18 +345,10 @@ export default function GoogleReviewsSection({ content }: Props) {
                   willChange: "transform",
                 }}
               >
-                {reviews.map((review, idx) => (
-                  <article
-                    key={`${review.reviewerName}-${idx}`}
-                    style={{
-                      minWidth: "100%",
-                      background: "#f1f1f3",
-                      border: "1px solid #d6d6d9",
-                      borderRadius: "0",
-                      padding: "14px 12px",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "7px" }}>
+                {reviews.map((review, idx) => {
+                  const mobileHref = reviewLinkHref(review.reviewUrl);
+                  const mobileHeader = (
+                    <>
                       <div
                         style={{
                           width: "32px",
@@ -357,6 +361,7 @@ export default function GoogleReviewsSection({ content }: Props) {
                           justifyContent: "center",
                           fontWeight: 700,
                           fontSize: "0.84rem",
+                          flexShrink: 0,
                         }}
                       >
                         {(review.avatarLetter || review.reviewerName?.charAt(0) || "R").toUpperCase()}
@@ -365,33 +370,48 @@ export default function GoogleReviewsSection({ content }: Props) {
                         <p style={{ margin: 0, color: "#1d4ed8", fontWeight: 700, fontSize: "0.94rem" }}>{review.reviewerName}</p>
                         <p style={{ margin: 0, color: "#4b5563", fontSize: "0.78rem" }}>{review.reviewAge || ""}</p>
                       </div>
-                      <div style={{ marginLeft: "auto" }}>
+                      <div style={{ marginLeft: "auto", flexShrink: 0 }}>
                         <GoogleGIcon />
                       </div>
-                    </div>
-                    <p style={{ margin: "0 0 8px", color: "#ef8a23", fontSize: "1.05rem", letterSpacing: "0.04em" }}>
-                      {"★".repeat(Math.max(1, Math.min(5, Math.round(review.rating || 5))))}
-                    </p>
-                    <p style={{ margin: 0, color: "#1f2937", fontSize: "0.98rem", lineHeight: 1.55 }}>{review.text}</p>
-                    {review.reviewUrl && review.reviewUrl !== "#" && (
-                      <a
-                        href={review.reviewUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          marginTop: "9px",
-                          display: "inline-block",
-                          color: "#2563eb",
-                          fontSize: "0.84rem",
-                          fontWeight: 700,
-                          textDecoration: "none",
-                        }}
-                      >
-                        View original
-                      </a>
-                    )}
-                  </article>
-                ))}
+                    </>
+                  );
+                  return (
+                    <article
+                      key={`${review.reviewerName}-${idx}`}
+                      style={{
+                        minWidth: "100%",
+                        background: "#f1f1f3",
+                        border: "1px solid #d6d6d9",
+                        borderRadius: "0",
+                        padding: "14px 12px",
+                      }}
+                    >
+                      {mobileHref ? (
+                        <a
+                          href={mobileHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginBottom: "7px",
+                            textDecoration: "none",
+                            color: "inherit",
+                          }}
+                        >
+                          {mobileHeader}
+                        </a>
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "7px" }}>{mobileHeader}</div>
+                      )}
+                      <p style={{ margin: "0 0 8px", color: "#ef8a23", fontSize: "1.05rem", letterSpacing: "0.04em" }}>
+                        {"★".repeat(Math.max(1, Math.min(5, Math.round(review.rating || 5))))}
+                      </p>
+                      <p style={{ margin: 0, color: "#1f2937", fontSize: "0.98rem", lineHeight: 1.55 }}>{review.text}</p>
+                    </article>
+                  );
+                })}
               </div>
             </div>
 

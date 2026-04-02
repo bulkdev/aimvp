@@ -119,6 +119,8 @@ export interface GeneratedSiteContent {
       review: string;
       rating: number;
     }[];
+    /** Plumbing hero eyebrow: text before " · {location}" (e.g. Licensed plumbers). Location always follows intake city/state when set. */
+    heroTaglineLead?: string;
   };
   theme: SiteTheme;
 }

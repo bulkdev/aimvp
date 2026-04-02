@@ -187,9 +187,6 @@ export default function PortfolioSection({ content, styleVariant = "cards" }: Pr
                   <p style={{ margin: 0, color: "rgba(255,255,255,0.92)", fontSize: "0.92rem", lineHeight: 1.6 }}>
                     &ldquo;{item.review}&rdquo;
                   </p>
-                  <p style={{ margin: "8px 0 0", color: "rgba(255,255,255,0.72)", fontSize: "0.78rem" }}>
-                    {item.projectName}
-                  </p>
                 </div>
               </div>
             </button>
@@ -298,9 +295,6 @@ export default function PortfolioSection({ content, styleVariant = "cards" }: Pr
             </div>
 
             <div style={{ padding: "14px 16px 16px", background: "#0b1220" }}>
-              <div style={{ color: "#fff", fontWeight: 600, marginBottom: "10px" }}>
-                {activeProject.projectName}
-              </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {activeProject.photos.map((_, idx) => (
                   <button

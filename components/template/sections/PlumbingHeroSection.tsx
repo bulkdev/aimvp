@@ -40,12 +40,14 @@ export default function PlumbingHeroSection({
   ctaPlacement = "inline",
 }: Props) {
   const { hero, tagline } = content;
-  const loc = intakeLocationLine(intake);
-  const displayTagline =
-    loc && /your area/i.test(tagline) ? tagline.replace(/your area/gi, loc) : tagline;
-  const taglineParts = displayTagline.split("·").map((p) => p.trim()).filter(Boolean);
-  const taglinePrefix = taglineParts.length > 1 ? taglineParts.slice(0, -1).join(" · ") : "";
-  const taglineArea = taglineParts.length > 1 ? taglineParts[taglineParts.length - 1] : displayTagline;
+  const loc = intakeLocationLine(intake)?.trim() || "";
+  const rawParts = tagline.split("·").map((p) => p.trim()).filter(Boolean);
+  const defaultLeadFromTagline =
+    rawParts.length > 1 ? rawParts.slice(0, -1).join(" · ") : rawParts[0] || "";
+  const taglineLead =
+    content.assets?.heroTaglineLead?.trim() || defaultLeadFromTagline;
+  const areaFromTagline = rawParts.length > 1 ? rawParts[rawParts.length - 1]! : "";
+  const areaDisplay = loc || areaFromTagline;
   const slides =
     content.assets?.heroSlides && content.assets.heroSlides.length > 0
       ? content.assets.heroSlides.map((src, i) => ({ src, alt: `Hero slide ${i + 1}` }))
@@ -167,9 +169,9 @@ export default function PlumbingHeroSection({
               marginBottom: "16px",
             }}
           >
-            {taglinePrefix ? (
+            {taglineLead && areaDisplay ? (
               <>
-                <span>{taglinePrefix} · </span>
+                <span>{taglineLead} · </span>
                 <span
                   style={{
                     color: "color-mix(in srgb, var(--accent) 82%, #fff 18%)",
@@ -177,9 +179,29 @@ export default function PlumbingHeroSection({
                     fontWeight: 800,
                   }}
                 >
-                  {taglineArea}
+                  {areaDisplay}
                 </span>
               </>
+            ) : taglineLead ? (
+              <span
+                style={{
+                  color: "color-mix(in srgb, var(--accent) 82%, #fff 18%)",
+                  fontSize: "clamp(0.92rem, 2.1vw, 1.12rem)",
+                  fontWeight: 800,
+                }}
+              >
+                {taglineLead}
+              </span>
+            ) : areaDisplay ? (
+              <span
+                style={{
+                  color: "color-mix(in srgb, var(--accent) 82%, #fff 18%)",
+                  fontSize: "clamp(0.92rem, 2.1vw, 1.12rem)",
+                  fontWeight: 800,
+                }}
+              >
+                {areaDisplay}
+              </span>
             ) : (
               <span
                 style={{
@@ -188,7 +210,7 @@ export default function PlumbingHeroSection({
                   fontWeight: 800,
                 }}
               >
-                {taglineArea}
+                {tagline}
               </span>
             )}
           </span>
