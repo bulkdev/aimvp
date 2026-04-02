@@ -49,9 +49,9 @@ export default function PlumbingHeroSection({
   const areaFromTagline = rawParts.length > 1 ? rawParts[rawParts.length - 1]! : "";
   const areaDisplay = loc || areaFromTagline;
 
-  /** Location line in eyebrow — 2× the accent size used for the lead so city/state reads larger. */
+  /** Location line in eyebrow — 2× the lead size; uses theme accent as-is (no lighten). */
   const locationEyebrowStyle = {
-    color: "color-mix(in srgb, var(--accent) 82%, #fff 18%)",
+    color: "var(--accent)",
     fontSize: "clamp(1.84rem, 4.2vw, 2.24rem)",
     fontWeight: 800,
     lineHeight: 1.15,
