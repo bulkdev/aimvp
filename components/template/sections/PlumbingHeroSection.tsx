@@ -49,12 +49,14 @@ export default function PlumbingHeroSection({
   const areaFromTagline = rawParts.length > 1 ? rawParts[rawParts.length - 1]! : "";
   const areaDisplay = loc || areaFromTagline;
 
-  /** Location line in eyebrow — 2× the lead size; uses theme accent as-is (no lighten). */
+  /** Location line in eyebrow — same display font as hero h1; uses theme accent as-is (no lighten). */
   const locationEyebrowStyle = {
+    fontFamily: "var(--h-font)",
     color: "var(--accent)",
     fontSize: "clamp(1.84rem, 4.2vw, 2.24rem)",
     fontWeight: 800,
     lineHeight: 1.15,
+    letterSpacing: "-0.02em",
   } as const;
   const slides =
     content.assets?.heroSlides && content.assets.heroSlides.length > 0
