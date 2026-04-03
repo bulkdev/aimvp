@@ -1,4 +1,5 @@
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
+import { applyIntakeLocationToCopy } from "@/lib/location";
 
 interface Props {
   content: GeneratedSiteContent;
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function CtaBanner({ content, intake }: Props) {
+  const contactSubheading = applyIntakeLocationToCopy(content.contact.subheading, intake);
   return (
     <section
       style={{
@@ -39,7 +41,7 @@ export default function CtaBanner({ content, intake }: Props) {
             lineHeight: 1.6,
           }}
         >
-          {content.contact.subheading}
+          {contactSubheading}
         </p>
 
         <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>

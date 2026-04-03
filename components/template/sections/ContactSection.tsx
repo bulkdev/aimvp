@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
 import { normalizeNap } from "@/lib/seo";
-import { intakeLocationLine } from "@/lib/location";
+import { applyIntakeLocationToCopy, intakeLocationLine } from "@/lib/location";
 import { TurnstileField } from "@/components/security/TurnstileField";
 
 interface Props {
@@ -29,6 +29,7 @@ export default function ContactSection({ content, intake, projectId }: Props) {
 
   const nap = normalizeNap(intake);
   const serviceAreaLine = intakeLocationLine(intake)?.trim() || "";
+  const contactSubheading = applyIntakeLocationToCopy(content.contact.subheading, intake);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -124,7 +125,7 @@ export default function ContactSection({ content, intake, projectId }: Props) {
             </h2>
             <div className="accent-bar" />
             <p style={{ color: "#4b5563", fontSize: "1rem", lineHeight: 1.7, marginBottom: serviceAreaLine ? "12px" : "32px" }}>
-              {content.contact.subheading}
+              {contactSubheading}
             </p>
             {serviceAreaLine ? (
               <p

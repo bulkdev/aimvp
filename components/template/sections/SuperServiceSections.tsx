@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData, ServiceItem } from "@/types";
-import { intakeLocationLine } from "@/lib/location";
+import { applyIntakeLocationToCopy, intakeLocationLine } from "@/lib/location";
 
 /** Stock imagery — Unsplash License */
 const HERO_SLIDES: { src: string; alt: string }[] = [
@@ -175,6 +175,8 @@ export function SuperServiceNavbar({ content, intake }: { content: GeneratedSite
 
 export function SuperServiceHero({ content, intake }: { content: GeneratedSiteContent; intake: IntakeFormData }) {
   const { hero, tagline } = content;
+  const heroSubtitle = applyIntakeLocationToCopy(hero.subtitle, intake);
+  const taglineLive = applyIntakeLocationToCopy(tagline, intake);
   const loc = intakeLocationLine(intake);
   const slides =
     content.assets?.heroSlides && content.assets.heroSlides.length > 0
@@ -223,14 +225,14 @@ export function SuperServiceHero({ content, intake }: { content: GeneratedSiteCo
       </div>
 
       <div className="relative z-10 max-w-screen-2xl mx-auto px-4 md:px-8 lg:px-12 pb-14 md:pb-20 pt-32 w-full">
-        <p className="text-white/90 text-sm md:text-base font-bold uppercase tracking-[0.2em] mb-3">{tagline}</p>
+        <p className="text-white/90 text-sm md:text-base font-bold uppercase tracking-[0.2em] mb-3">{taglineLive}</p>
         <h1
           className="text-white text-[clamp(1.75rem,5vw,3rem)] font-bold leading-tight max-w-4xl mb-4"
           style={{ fontFamily: "var(--h-font)" }}
         >
           {hero.title}
         </h1>
-        <p className="text-white/85 text-lg md:text-xl max-w-2xl mb-8 leading-relaxed">{hero.subtitle}</p>
+        <p className="text-white/85 text-lg md:text-xl max-w-2xl mb-8 leading-relaxed">{heroSubtitle}</p>
 
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-4">
           <a
@@ -351,6 +353,7 @@ export function SuperServiceWhySection({
 }) {
   const { about } = content;
   const locationLine = intakeLocationLine(intake)?.trim() || "";
+  const aboutBody = applyIntakeLocationToCopy(about.body, intake);
   const lines = about.highlights.length ? about.highlights : ["Licensed & insured", "24/7 emergency service", "Respectful technicians"];
 
   return (
@@ -379,7 +382,7 @@ export function SuperServiceWhySection({
                 Proudly serving {locationLine}
               </p>
             ) : null}
-            <p className="text-slate-600 leading-relaxed mb-8 whitespace-pre-line">{about.body}</p>
+            <p className="text-slate-600 leading-relaxed mb-8 whitespace-pre-line">{aboutBody}</p>
             <ul className="space-y-3">
               {lines.map((line) => (
                 <li key={line} className="flex gap-3 items-start text-slate-800 font-medium">

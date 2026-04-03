@@ -1,5 +1,5 @@
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
-import { intakeLocationLine } from "@/lib/location";
+import { applyIntakeLocationToCopy, intakeLocationLine } from "@/lib/location";
 
 interface Props {
   content: GeneratedSiteContent;
@@ -9,6 +9,7 @@ interface Props {
 export default function HeroSection({ content, intake }: Props) {
   const { hero, tagline } = content;
   const locationLine = intakeLocationLine(intake);
+  const heroSubtitle = applyIntakeLocationToCopy(hero.subtitle, intake);
 
   return (
     <section
@@ -85,7 +86,7 @@ export default function HeroSection({ content, intake }: Props) {
               maxWidth: "560px",
             }}
           >
-            {hero.subtitle}
+            {heroSubtitle}
           </p>
 
           {/* CTAs */}

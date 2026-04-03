@@ -2,7 +2,7 @@
 
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
-import { intakeLocationLine } from "@/lib/location";
+import { applyIntakeLocationToCopy, intakeLocationLine } from "@/lib/location";
 
 interface Props {
   content: GeneratedSiteContent;
@@ -76,6 +76,7 @@ export default function PlumbingFlowHeroSection({
   slideshowVariant = "fade",
 }: Props) {
   const { hero, tagline } = content;
+  const heroSubtitle = applyIntakeLocationToCopy(hero.subtitle, intake);
   const [selectedService, setSelectedService] = useState("");
   const [index, setIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -244,7 +245,7 @@ export default function PlumbingFlowHeroSection({
               className="text-sm md:text-[0.95rem] mb-4 max-w-xl max-lg:mb-3"
               style={{ color: "rgba(226,232,240,0.92)", lineHeight: 1.55 }}
             >
-              {hero.subtitle}
+              {heroSubtitle}
             </p>
 
             {/* Dots above CTAs on mobile — avoids overlap with buttons + “Services” */}

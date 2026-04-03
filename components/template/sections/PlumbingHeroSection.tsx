@@ -2,7 +2,7 @@
 
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
-import { intakeLocationLine } from "@/lib/location";
+import { applyIntakeLocationToCopy, intakeLocationLine } from "@/lib/location";
 
 interface Props {
   content: GeneratedSiteContent;
@@ -41,6 +41,7 @@ export default function PlumbingHeroSection({
 }: Props) {
   const { hero, tagline } = content;
   const loc = intakeLocationLine(intake)?.trim() || "";
+  const heroSubtitle = applyIntakeLocationToCopy(hero.subtitle, intake);
   const rawParts = tagline.split("·").map((p) => p.trim()).filter(Boolean);
   const defaultLeadFromTagline =
     rawParts.length > 1 ? rawParts.slice(0, -1).join(" · ") : rawParts[0] || "";
@@ -234,7 +235,7 @@ export default function PlumbingHeroSection({
               maxWidth: "560px",
             }}
           >
-            {hero.subtitle}
+            {heroSubtitle}
           </p>
 
           {ctaPlacement === "stacked" ? (

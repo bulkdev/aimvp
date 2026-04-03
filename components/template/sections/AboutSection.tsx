@@ -1,5 +1,5 @@
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
-import { intakeLocationLine } from "@/lib/location";
+import { applyIntakeLocationToCopy, intakeLocationLine } from "@/lib/location";
 
 interface Props {
   content: GeneratedSiteContent;
@@ -9,6 +9,7 @@ interface Props {
 export default function AboutSection({ content, intake }: Props) {
   const { about } = content;
   const locationLine = intakeLocationLine(intake)?.trim() || "";
+  const aboutBody = applyIntakeLocationToCopy(about.body, intake);
 
   return (
     <section id="about" style={{ background: "#ffffff", padding: "96px 0" }}>
@@ -53,14 +54,14 @@ export default function AboutSection({ content, intake }: Props) {
               </p>
             ) : null}
 
-            {about.body.split("\n\n").map((paragraph, i) => (
+            {aboutBody.split("\n\n").map((paragraph, i) => (
               <p
                 key={i}
                 style={{
                   color: "#374151",
                   fontSize: "1rem",
                   lineHeight: 1.8,
-                  marginBottom: i < about.body.split("\n\n").length - 1 ? "16px" : "0",
+                  marginBottom: i < aboutBody.split("\n\n").length - 1 ? "16px" : "0",
                 }}
               >
                 {paragraph}

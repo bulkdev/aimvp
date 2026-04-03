@@ -71,3 +71,37 @@ export function formatAreaWithState(areaName: string, intake: Pick<IntakeFormDat
   if (!trimmed) return intakeLocationLine(intake);
   return formatCityState(trimmed, intake.state);
 }
+
+/**
+ * Rewrites common location phrases in persisted generated copy so they track the current
+ * admin city/state without a full regenerate. Safe to run on any string; no-ops when intake has no location.
+ */
+export function applyIntakeLocationToCopy(
+  text: string,
+  intake: Pick<IntakeFormData, "city" | "state"> | null | undefined
+): string {
+  const line = intakeLocationLine(intake)?.trim();
+  if (!line || !text) return text;
+
+  let out = text;
+
+  const rep = (re: RegExp) => {
+    out = out.replace(re, (_m, a: string, _b: string, c: string) => `${a}${line}${c}`);
+  };
+
+  rep(/(schedule the right technician for )(.+?)( and nearby areas)/gi);
+  rep(/(for your home in )(.+?)(\.(?:\s|$|\n))/);
+  rep(/(residential and light commercial work across )(.+?)(\. We're\b)/);
+  rep(/( and light commercial work across )(.+?)(\. We're\b)/);
+  rep(/(to your door in )(.+?)(\. Upfront\b)/);
+  rep(/(Serving )(.+?)( and surrounding areas)/i);
+  rep(/(across )(.+?)( and nearby communities)/i);
+  rep(/(Homeowners across )(.+?)( rely on)/i);
+  rep(/( for homeowners and businesses in )(.+?)(\. We're\b)/i);
+  rep(/(proudly serving )(.+?)( and the surrounding communities)/i);
+  rep(/(help fast in )(.+?)(\.)/);
+  out = out.replace(/( · Serving )(.+)$/i, (_m, a: string) => `${a}${line}`);
+  out = out.replace(/( — Serving )(.+)$/i, (_m, a: string) => `${a}${line}`);
+
+  return out;
+}
