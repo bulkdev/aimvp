@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { readResponseJson } from "@/lib/readResponseJson";
+import { compressImportedProject } from "@/lib/compressProjectPayload";
+import type { Project } from "@/types";
 
 export default function ProjectBackupBar({ projectId }: { projectId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -40,7 +42,8 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
     try {
       const text = await file.text();
       const parsed = JSON.parse(text) as unknown;
-      const project = (parsed as { project?: unknown }).project ?? parsed;
+      const raw = (parsed as { project?: unknown }).project ?? parsed;
+      const project = await compressImportedProject(raw as Project);
       const res = await fetch("/api/projects/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

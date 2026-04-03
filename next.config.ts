@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   // `next start` only supports production build output.
   distDir: process.env.VERCEL ? ".next" : isProd ? "next-build-artifacts-prod" : "next-build-artifacts",
   experimental: {
-    // Large JSON bodies (e.g. many base64 images in project PATCH). Platform may still cap requests.
+    // Large JSON bodies (e.g. many base64 images). Route Handlers are still capped by the host (e.g. ~4.5MB on Vercel); client compresses before PATCH.
     serverActions: { bodySizeLimit: "25mb" },
     middlewareClientMaxBodySize: "25mb",
   },

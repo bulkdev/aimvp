@@ -28,6 +28,7 @@ import {
   DEFAULT_PORTFOLIO_HOME_PREVIEW_COUNT,
 } from "@/lib/portfolioPreview";
 import { readResponseJson } from "@/lib/readResponseJson";
+import { compressProjectSavePayload } from "@/lib/compressProjectPayload";
 
 interface Props {
   project: Project;
@@ -516,10 +517,12 @@ export default function OwnerDashboard({ project }: Props) {
         },
         publicSlug: publicSlug.trim(),
       };
+      setMsg("Compressing images for save…");
+      const compressed = await compressProjectSavePayload(payload);
       const res = await fetch(`/api/projects/${project.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(compressed),
       });
       if (!res.ok) {
         if (res.status === 413) throw new Error("Payload too large — use fewer or smaller images.");

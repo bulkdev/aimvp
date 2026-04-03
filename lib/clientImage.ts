@@ -19,9 +19,9 @@ export async function fileToCompressedDataUrl(
   file: File,
   options?: { maxEdge?: number; quality?: number; skipBelowBytes?: number }
 ): Promise<string> {
-  const maxEdge = options?.maxEdge ?? 1920;
-  const quality = options?.quality ?? 0.85;
-  const skipBelow = options?.skipBelowBytes ?? 120_000;
+  const maxEdge = options?.maxEdge ?? 1680;
+  const quality = options?.quality ?? 0.8;
+  const skipBelow = options?.skipBelowBytes ?? 100_000;
 
   if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
     return readFileAsDataUrl(file);
