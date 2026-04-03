@@ -13,6 +13,7 @@ function initialHeroTaglineLead(project: Project): string {
   return parts.length > 1 ? parts.slice(0, -1).join(" · ") : parts[0] || "";
 }
 import { fileToCompressedDataUrl } from "@/lib/clientImage";
+import SiteLogoEditor from "@/components/admin/SiteLogoEditor";
 
 interface Props { project: Project; }
 
@@ -106,6 +107,7 @@ export default function AdminEditor({ project }: Props) {
   const [state, setState] = useState(project.intake.state ?? "");
   const [email, setEmail] = useState(project.intake.email ?? "");
   const [address, setAddress] = useState(project.intake.address ?? "");
+  const [logoDataUrl, setLogoDataUrl] = useState(project.intake.logoDataUrl ?? "");
   const [heroTitle, setHeroTitle] = useState(project.content.hero.title);
   const [heroSubtitle, setHeroSubtitle] = useState(project.content.hero.subtitle);
   const [heroTaglineLead, setHeroTaglineLead] = useState(() => initialHeroTaglineLead(project));
@@ -228,18 +230,23 @@ export default function AdminEditor({ project }: Props) {
         .map((s) => ({ ...s, title: s.title.trim(), description: s.description.trim() }))
         .filter((s) => s.title && s.description);
 
+      const nextIntake = {
+        ...project.intake,
+        companyName,
+        siteTemplate,
+        customDomain,
+        phone,
+        city,
+        state,
+        email,
+        address,
+      };
+      const logoTrim = logoDataUrl.trim();
+      if (logoTrim) nextIntake.logoDataUrl = logoTrim;
+      else delete nextIntake.logoDataUrl;
+
       const payload = {
-        intake: {
-          ...project.intake,
-          companyName,
-          siteTemplate,
-          customDomain,
-          phone,
-          city,
-          state,
-          email,
-          address,
-        },
+        intake: nextIntake,
         content: {
           ...project.content,
           brandName: companyName,
@@ -404,6 +411,13 @@ export default function AdminEditor({ project }: Props) {
             </a>
           </p>
         </div>
+
+        <SiteLogoEditor
+          value={logoDataUrl || undefined}
+          onChange={(next) => setLogoDataUrl(next ?? "")}
+          brandLabel={companyName || "Site"}
+          onError={setMessage}
+        />
 
         <input className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={heroTitle} onChange={(e)=>setHeroTitle(e.target.value)} placeholder="Hero title" />
         <textarea className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 h-24" value={heroSubtitle} onChange={(e)=>setHeroSubtitle(e.target.value)} placeholder="Hero subtitle" />

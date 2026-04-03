@@ -13,6 +13,7 @@ function initialHeroTaglineLead(project: Project): string {
   return parts.length > 1 ? parts.slice(0, -1).join(" · ") : parts[0] || "";
 }
 import { fileToCompressedDataUrl, fileToFaviconDataUrl } from "@/lib/clientImage";
+import SiteLogoEditor from "@/components/admin/SiteLogoEditor";
 
 interface Props {
   project: Project;
@@ -108,6 +109,7 @@ export default function OwnerDashboard({ project }: Props) {
   const [state, setState] = useState(project.intake.state ?? "");
   const [email, setEmail] = useState(project.intake.email ?? "");
   const [address, setAddress] = useState(project.intake.address ?? "");
+  const [logoDataUrl, setLogoDataUrl] = useState(project.intake.logoDataUrl ?? "");
   const [heroTitle, setHeroTitle] = useState(project.content.hero.title);
   const [heroSubtitle, setHeroSubtitle] = useState(project.content.hero.subtitle);
   const [heroTaglineLead, setHeroTaglineLead] = useState(() => initialHeroTaglineLead(project));
@@ -238,8 +240,13 @@ export default function OwnerDashboard({ project }: Props) {
     try {
       const { faviconDataUrl: _prevFav, ...assetRest } = project.content.assets ?? {};
       void _prevFav;
+      const nextIntake = { ...project.intake, companyName, siteTemplate, customDomain, phone, city, state, email, address };
+      const logoTrim = logoDataUrl.trim();
+      if (logoTrim) nextIntake.logoDataUrl = logoTrim;
+      else delete nextIntake.logoDataUrl;
+
       const payload = {
-        intake: { ...project.intake, companyName, siteTemplate, customDomain, phone, city, state, email, address },
+        intake: nextIntake,
         content: {
           ...project.content,
           brandName: companyName,
@@ -376,6 +383,13 @@ export default function OwnerDashboard({ project }: Props) {
             </p>
           </div>
         </section>
+
+        <SiteLogoEditor
+          value={logoDataUrl || undefined}
+          onChange={(next) => setLogoDataUrl(next ?? "")}
+          brandLabel={companyName || "Site"}
+          onError={setMsg}
+        />
 
         <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
           <h2 className="text-sm font-medium">Site favicon (browser tab)</h2>
