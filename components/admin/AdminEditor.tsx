@@ -26,6 +26,7 @@ import {
   clampPortfolioHomePreviewCount,
   DEFAULT_PORTFOLIO_HOME_PREVIEW_COUNT,
 } from "@/lib/portfolioPreview";
+import { readResponseJson } from "@/lib/readResponseJson";
 
 interface Props { project: Project; }
 
@@ -502,8 +503,8 @@ export default function AdminEditor({ project }: Props) {
         if (res.status === 413) {
           throw new Error("Payload too large — try fewer or smaller images, then save again.");
         }
-        const errJson = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(errJson?.error || "Failed to save");
+        const errBody = await readResponseJson<{ error?: string }>(res);
+        throw new Error(errBody?.error || "Failed to save");
       }
       setMessage("Saved. Refresh preview to see updates.");
     } catch (e) {
@@ -558,7 +559,7 @@ export default function AdminEditor({ project }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: url.trim(), maxImages: max }),
       });
-      const data = (await res.json()) as { error?: string; images?: string[] };
+      const data = await readResponseJson<{ error?: string; images?: string[] }>(res);
       if (!res.ok) throw new Error(data?.error || "Could not scrape images.");
       const images = data.images ?? [];
       setProjects((prev) =>

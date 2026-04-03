@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { readResponseJson } from "@/lib/readResponseJson";
 
 export default function ProjectBackupBar({ projectId }: { projectId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -12,7 +13,7 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
     setBusy("export");
     try {
       const res = await fetch(`/api/projects/${projectId}`);
-      const data = (await res.json()) as { project?: unknown; error?: string };
+      const data = await readResponseJson<{ project?: unknown; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || "Could not load project.");
       const blob = new Blob([JSON.stringify(data.project, null, 2)], {
         type: "application/json",
@@ -45,7 +46,7 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ project }),
       });
-      const data = (await res.json()) as { project?: { id: string }; error?: string; details?: string };
+      const data = await readResponseJson<{ project?: { id: string }; error?: string; details?: string }>(res);
       if (!res.ok) {
         throw new Error(data.details ? `${data.error} (${data.details})` : data.error || "Import failed.");
       }

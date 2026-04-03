@@ -27,6 +27,7 @@ import {
   clampPortfolioHomePreviewCount,
   DEFAULT_PORTFOLIO_HOME_PREVIEW_COUNT,
 } from "@/lib/portfolioPreview";
+import { readResponseJson } from "@/lib/readResponseJson";
 
 interface Props {
   project: Project;
@@ -522,8 +523,8 @@ export default function OwnerDashboard({ project }: Props) {
       });
       if (!res.ok) {
         if (res.status === 413) throw new Error("Payload too large — use fewer or smaller images.");
-        const errJson = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(errJson?.error || "Failed");
+        const errBody = await readResponseJson<{ error?: string }>(res);
+        throw new Error(errBody?.error || "Failed");
       }
       setMsg("Saved successfully.");
     } catch (e) {

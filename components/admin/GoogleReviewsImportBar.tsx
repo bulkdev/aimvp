@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { GoogleReviewsImportResponse } from "@/types";
+import { readResponseJson } from "@/lib/readResponseJson";
 
 type ReviewRow = {
   reviewerName: string;
@@ -35,7 +36,7 @@ export default function GoogleReviewsImportBar({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: trimmed }),
       });
-      const data = (await res.json()) as GoogleReviewsImportResponse & { error?: string; details?: string };
+      const data = await readResponseJson<GoogleReviewsImportResponse & { error?: string; details?: string }>(res);
       if (!res.ok) {
         throw new Error(data.details ? `${data.error} (${data.details})` : data.error || "Import failed.");
       }
