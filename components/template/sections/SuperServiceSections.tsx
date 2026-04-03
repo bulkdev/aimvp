@@ -342,8 +342,15 @@ export function SuperServiceTradeCards({ content, intake }: { content: Generated
 
 // ─── Why us (split) ───────────────────────────────────────────────────────────
 
-export function SuperServiceWhySection({ content }: { content: GeneratedSiteContent }) {
+export function SuperServiceWhySection({
+  content,
+  intake,
+}: {
+  content: GeneratedSiteContent;
+  intake: IntakeFormData;
+}) {
   const { about } = content;
+  const locationLine = intakeLocationLine(intake)?.trim() || "";
   const lines = about.highlights.length ? about.highlights : ["Licensed & insured", "24/7 emergency service", "Respectful technicians"];
 
   return (
@@ -367,6 +374,11 @@ export function SuperServiceWhySection({ content }: { content: GeneratedSiteCont
             <h3 className="text-lg font-bold mb-4" style={{ color: "var(--primary)" }}>
               {about.heading}
             </h3>
+            {locationLine ? (
+              <p className="text-sm font-semibold mb-4" style={{ color: "var(--accent)" }}>
+                Proudly serving {locationLine}
+              </p>
+            ) : null}
             <p className="text-slate-600 leading-relaxed mb-8 whitespace-pre-line">{about.body}</p>
             <ul className="space-y-3">
               {lines.map((line) => (

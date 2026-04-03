@@ -259,7 +259,11 @@ export default function SiteTemplate({ project }: Props) {
       ),
     portfolio: <PortfolioSection content={content} styleVariant={effectiveDesign?.ourWork ?? "cards"} />,
     about:
-      variant === "superService" ? <SuperServiceWhySection content={content} /> : <AboutSection content={content} />,
+      variant === "superService" ? (
+        <SuperServiceWhySection content={content} intake={intake} />
+      ) : (
+        <AboutSection content={content} intake={intake} />
+      ),
     booking: intake.bookingEnabled ? <BookingSection content={content} /> : null,
     faq: <FaqSection content={content} />,
     reviews: <GoogleReviewsSection content={content} />,

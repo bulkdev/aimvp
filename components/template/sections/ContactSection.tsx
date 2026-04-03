@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
 import { normalizeNap } from "@/lib/seo";
+import { intakeLocationLine } from "@/lib/location";
 import { TurnstileField } from "@/components/security/TurnstileField";
 
 interface Props {
@@ -27,6 +28,7 @@ export default function ContactSection({ content, intake, projectId }: Props) {
   const [errorMessage, setErrorMessage] = useState("");
 
   const nap = normalizeNap(intake);
+  const serviceAreaLine = intakeLocationLine(intake)?.trim() || "";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -121,9 +123,23 @@ export default function ContactSection({ content, intake, projectId }: Props) {
               {content.contact.heading}
             </h2>
             <div className="accent-bar" />
-            <p style={{ color: "#4b5563", fontSize: "1rem", lineHeight: 1.7, marginBottom: "32px" }}>
+            <p style={{ color: "#4b5563", fontSize: "1rem", lineHeight: 1.7, marginBottom: serviceAreaLine ? "12px" : "32px" }}>
               {content.contact.subheading}
             </p>
+            {serviceAreaLine ? (
+              <p
+                style={{
+                  color: "#1f2937",
+                  fontSize: "1rem",
+                  lineHeight: 1.6,
+                  marginBottom: "28px",
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ color: "#6b7280", fontWeight: 500 }}>Service area: </span>
+                {serviceAreaLine}
+              </p>
+            ) : null}
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {nap.phone && (

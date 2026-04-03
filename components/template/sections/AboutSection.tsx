@@ -1,11 +1,14 @@
-import type { GeneratedSiteContent } from "@/types";
+import type { GeneratedSiteContent, IntakeFormData } from "@/types";
+import { intakeLocationLine } from "@/lib/location";
 
 interface Props {
   content: GeneratedSiteContent;
+  intake: IntakeFormData;
 }
 
-export default function AboutSection({ content }: Props) {
+export default function AboutSection({ content, intake }: Props) {
   const { about } = content;
+  const locationLine = intakeLocationLine(intake)?.trim() || "";
 
   return (
     <section id="about" style={{ background: "#ffffff", padding: "96px 0" }}>
@@ -35,6 +38,20 @@ export default function AboutSection({ content }: Props) {
               {about.heading}
             </h2>
             <div className="accent-bar" />
+
+            {locationLine ? (
+              <p
+                style={{
+                  color: "var(--accent)",
+                  fontSize: "0.98rem",
+                  fontWeight: 600,
+                  marginBottom: "18px",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                Proudly serving {locationLine}
+              </p>
+            ) : null}
 
             {about.body.split("\n\n").map((paragraph, i) => (
               <p
