@@ -137,7 +137,7 @@ export default function LandingHome() {
     target: heroRef,
     offset: ["start start", "end start"],
   });
-  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "28%"]);
+  // Parallax on opacity only — translating the mesh on Y caused a faint band at the top / under the nav
   const meshOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.35]);
   const headlineY = useTransform(scrollYProgress, [0, 1], [0, 80]);
 
@@ -158,7 +158,7 @@ export default function LandingHome() {
   return (
     <div className="landing-root min-h-screen bg-[#030712] text-white overflow-x-hidden">
       <div className="fixed inset-0 pointer-events-none z-0">
-        <motion.div style={{ y: bgY, opacity: meshOpacity }} className="absolute inset-0 landing-mesh" />
+        <motion.div style={{ opacity: meshOpacity }} className="absolute inset-0 landing-mesh min-h-full" />
         <div
           className="absolute inset-0 opacity-[0.35]"
           style={{
@@ -186,8 +186,8 @@ export default function LandingHome() {
         />
       </div>
 
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#030712]/75 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 overflow-hidden border-b border-white/[0.06] bg-[#030712]/92 backdrop-blur-xl [contain:paint]">
+        <div className="max-w-6xl mx-auto px-5 h-full flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-600 p-[1px] shadow-lg shadow-indigo-500/25">
               <div className="w-full h-full rounded-[11px] bg-[#0a0f1c] flex items-center justify-center text-xs font-bold tracking-tight">
