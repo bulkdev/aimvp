@@ -14,7 +14,7 @@ export async function GET() {
   return new NextResponse(new Uint8Array(parsed.buffer), {
     headers: {
       "Content-Type": parsed.mime || "image/png",
-      "Cache-Control": "public, max-age=3600, s-maxage=3600",
+      "Cache-Control": "public, max-age=86400, s-maxage=86400",
     },
   });
 }

@@ -7,6 +7,8 @@ const LOCAL_FILE = path.join(process.cwd(), ".data", "landing-branding.json");
 
 export type LandingBranding = {
   faviconDataUrl?: string | null;
+  /** Bumped on each favicon save so icon URLs cache-bust in browsers and CDNs. */
+  faviconRev?: number;
 };
 
 function getRedis(): Redis | null {

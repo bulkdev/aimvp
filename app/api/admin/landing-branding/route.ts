@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Favicon must be an image data URL." }, { status: 400 });
   }
 
-  await setLandingBranding({ faviconDataUrl });
+  await setLandingBranding({ faviconDataUrl, faviconRev: Date.now() });
   const branding = await getLandingBranding();
   return NextResponse.json({ ok: true, branding });
 }

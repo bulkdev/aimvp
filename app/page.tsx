@@ -11,6 +11,10 @@ import { landingFaviconIcons } from "@/lib/favicon-metadata";
 
 const canonicalPath = "/";
 
+/** Required so favicon/metadata pick up Redis/file branding without a redeploy. */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function generateMetadata(): Promise<Metadata> {
   const iconMeta = await landingFaviconIcons();
   return {
