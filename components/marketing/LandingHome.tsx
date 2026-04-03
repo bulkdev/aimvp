@@ -91,6 +91,45 @@ function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: strin
   );
 }
 
+const PORTFOLIO = [
+  {
+    title: "Trade & home services",
+    niche: "Plumbing · HVAC · electrical",
+    blurb: "Emergency-first layouts, service areas, and phone CTAs that turn searches into booked jobs.",
+    gradient: "from-cyan-500/30 to-slate-900/80",
+  },
+  {
+    title: "Local retail & shops",
+    niche: "Boutiques · specialty stores",
+    blurb: "Hours, directions, and product stories that make first-time visitors confident to walk in.",
+    gradient: "from-violet-500/25 to-slate-900/80",
+  },
+  {
+    title: "Professional services",
+    niche: "Consulting · legal · finance",
+    blurb: "Credibility-first pages: clear expertise, trust signals, and easy contact for high-intent leads.",
+    gradient: "from-indigo-500/30 to-slate-900/80",
+  },
+  {
+    title: "Contractors & builders",
+    niche: "Remodel · roofing · landscaping",
+    blurb: "Project galleries, reviews, and quote flows built around how homeowners actually decide.",
+    gradient: "from-amber-500/20 to-slate-900/80",
+  },
+  {
+    title: "Food & hospitality",
+    niche: "Restaurants · cafés · catering",
+    blurb: "Menus, reservations, and mobile-friendly paths from Google Maps to your table.",
+    gradient: "from-rose-500/25 to-slate-900/80",
+  },
+  {
+    title: "Health & wellness",
+    niche: "Clinics · fitness · spas",
+    blurb: "Appointment-focused UX, insurance and location clarity, and review-friendly structure.",
+    gradient: "from-emerald-500/25 to-slate-900/80",
+  },
+];
+
 export default function LandingHome() {
   const { data: session, status } = useSession();
   const heroRef = useRef<HTMLDivElement>(null);
@@ -118,7 +157,6 @@ export default function LandingHome() {
 
   return (
     <div className="landing-root min-h-screen bg-[#030712] text-white overflow-x-hidden">
-      {/* Ambient mesh + grid */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <motion.div style={{ y: bgY, opacity: meshOpacity }} className="absolute inset-0 landing-mesh" />
         <div
@@ -148,29 +186,31 @@ export default function LandingHome() {
         />
       </div>
 
-      {/* Nav */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#030712]/75 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-600 p-[1px] shadow-lg shadow-indigo-500/25">
-              <div className="w-full h-full rounded-[11px] bg-[#0a0f1c] flex items-center justify-center text-sm font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-indigo-300 to-fuchsia-400 bg-clip-text text-transparent">AI</span>
+              <div className="w-full h-full rounded-[11px] bg-[#0a0f1c] flex items-center justify-center text-xs font-bold tracking-tight">
+                <span className="bg-gradient-to-r from-indigo-300 to-fuchsia-400 bg-clip-text text-transparent">J</span>
               </div>
             </div>
             <span className="font-semibold tracking-tight text-white/95 group-hover:text-white transition-colors">
-              SiteGen<span className="text-indigo-400">AI</span>
+              Website by <span className="text-indigo-400">Jay</span>
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm text-white/55">
-            <a href="#craft" className="hover:text-white transition-colors">
-              Craft
+          <nav className="hidden lg:flex items-center gap-7 text-sm text-white/55">
+            <a href="#results" className="hover:text-white transition-colors">
+              Results
             </a>
-            <a href="#stack" className="hover:text-white transition-colors">
-              Stack
+            <a href="#portfolio" className="hover:text-white transition-colors">
+              Work
             </a>
-            <a href="#motion" className="hover:text-white transition-colors">
-              Motion
+            <a href="#seo" className="hover:text-white transition-colors">
+              SEO
+            </a>
+            <a href="#service" className="hover:text-white transition-colors">
+              Why Jay
             </a>
           </nav>
 
@@ -187,10 +227,7 @@ export default function LandingHome() {
                     Admin
                   </Link>
                 )}
-                <Link
-                  href="/login"
-                  className="text-sm text-white/70 hover:text-white px-3 py-2"
-                >
+                <Link href="/login" className="text-sm text-white/70 hover:text-white px-3 py-2">
                   Account
                 </Link>
               </>
@@ -211,7 +248,6 @@ export default function LandingHome() {
         </div>
       </header>
 
-      {/* Hero */}
       <section ref={heroRef} className="relative z-10 min-h-[100dvh] flex flex-col justify-center pt-24 pb-20 px-5">
         <motion.div style={{ y: headlineY }} className="max-w-5xl mx-auto text-center">
           <motion.div
@@ -229,20 +265,20 @@ export default function LandingHome() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-60" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
                 </span>
-                Web design · engineered
+                Websites for small businesses · by Jay
               </span>
             </motion.div>
 
             <motion.h1
               variants={fadeInUp}
               custom={1}
-              className="text-[clamp(2.5rem,7vw,4.75rem)] font-semibold leading-[1.05] tracking-[-0.035em] text-white"
+              className="text-[clamp(2.35rem,6.5vw,4.5rem)] font-semibold leading-[1.06] tracking-[-0.035em] text-white"
               style={{ fontFamily: "var(--font-display), Georgia, serif" }}
             >
-              Interfaces that
+              Your next customer
               <br />
               <span className="bg-gradient-to-r from-indigo-200 via-white to-fuchsia-300 bg-clip-text text-transparent">
-                feel alive.
+                is already searching online.
               </span>
             </motion.h1>
 
@@ -251,8 +287,9 @@ export default function LandingHome() {
               custom={2}
               className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-light"
             >
-              Precision layout, motion systems, and depth — the same discipline we bring to client work, packaged for
-              teams who ship fast without looking generic.
+              I&apos;m <strong className="text-slate-200 font-medium">Jay</strong> — I build fast, professional sites for
+              local and small businesses: clear messaging, strong SEO foundations, and support where you talk to a real
+              person (me), not a call center.
             </motion.p>
 
             <motion.div
@@ -261,25 +298,24 @@ export default function LandingHome() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
             >
               <a
-                href="#craft"
+                href="#portfolio"
                 className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-xl shadow-indigo-900/40 hover:shadow-indigo-800/50 hover:scale-[1.02] transition-all"
               >
-                Explore the work
+                See industries I serve
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </a>
               <a
-                href="#stack"
+                href="#results"
                 className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-medium border border-white/15 text-white/85 hover:bg-white/5 transition-colors"
               >
-                Technical depth
+                Sales &amp; lead results
               </a>
             </motion.div>
           </motion.div>
         </motion.div>
 
-        {/* 3D browser mock */}
         <div className="max-w-4xl mx-auto mt-16 md:mt-24 perspective-[1200px] px-2">
           <Magnetic3DCard className="relative mx-auto max-w-3xl">
             <div
@@ -294,24 +330,30 @@ export default function LandingHome() {
                     <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
                   </div>
                   <div className="flex-1 mx-4 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center px-3 text-xs text-white/35">
-                    yoursite.app/preview
+                    yourbusiness.com — built by Jay
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3 p-5 min-h-[200px]">
                   <div className="col-span-2 rounded-xl bg-gradient-to-br from-indigo-500/25 via-violet-600/15 to-fuchsia-600/10 border border-white/10 p-6 flex flex-col justify-end landing-hero-shimmer">
-                    <div className="h-2 w-24 bg-white/20 rounded mb-3" />
+                    <p className="text-xs text-indigo-200/80 mb-2 uppercase tracking-wider">Local SEO preview</p>
+                    <div className="h-2 w-28 bg-white/20 rounded mb-3" />
                     <div className="h-2 w-40 bg-white/10 rounded mb-2" />
                     <div className="h-2 w-32 bg-white/10 rounded" />
                   </div>
                   <div className="space-y-3">
-                    <div className="h-16 rounded-lg bg-white/5 border border-white/5" />
-                    <div className="h-16 rounded-lg bg-white/5 border border-white/5" />
-                    <div className="h-16 rounded-lg bg-gradient-to-br from-indigo-500/30 to-transparent border border-indigo-400/20" />
+                    <div className="h-16 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-[10px] text-white/30">
+                      Call now
+                    </div>
+                    <div className="h-16 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-[10px] text-white/30">
+                      Reviews
+                    </div>
+                    <div className="h-16 rounded-lg bg-gradient-to-br from-indigo-500/30 to-transparent border border-indigo-400/20 flex items-center justify-center text-[10px] text-emerald-400/80">
+                      Map pack ready
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            {/* Glow under card */}
             <div
               className="absolute -inset-4 rounded-3xl bg-gradient-to-t from-indigo-600/20 to-transparent blur-2xl -z-10 opacity-60"
               style={{ transform: "translateZ(-40px)" }}
@@ -338,23 +380,22 @@ export default function LandingHome() {
         </motion.div>
       </section>
 
-      {/* Marquee */}
       <section className="relative z-10 border-y border-white/5 bg-white/[0.02] py-6 overflow-hidden">
         <motion.div
           className="flex gap-16 whitespace-nowrap text-sm text-white/40 font-medium"
           animate={{ x: [0, -1200] }}
-          transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 48, repeat: Infinity, ease: "linear" }}
         >
           {Array(2)
             .fill([
-              "Design systems",
-              "Motion specs",
-              "Responsive depth",
-              "Accessibility",
-              "Performance",
-              "Brand polish",
-              "Component libraries",
-              "Prototype → ship",
+              "Local SEO",
+              "Google-friendly structure",
+              "Fast page loads",
+              "Mobile-first",
+              "Clear calls-to-action",
+              "Personal support from Jay",
+              "Conversion-focused copy",
+              "Ongoing help when you need it",
             ])
             .flat()
             .map((label, i) => (
@@ -366,76 +407,209 @@ export default function LandingHome() {
         </motion.div>
       </section>
 
-      {/* Bento */}
-      <section id="craft" className="relative z-10 py-28 px-5 max-w-6xl mx-auto">
+      {/* Results / sales impact */}
+      <section id="results" className="relative z-10 py-28 px-5 max-w-6xl mx-auto scroll-mt-24">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-14"
         >
+          <p className="text-indigo-300/90 text-sm font-medium tracking-widest uppercase mb-3">Outcomes that matter</p>
           <h2
             className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4"
             style={{ fontFamily: "var(--font-display), Georgia, serif" }}
           >
-            Craft, not templates
+            More visibility → more conversations → more sales
           </h2>
-          <p className="text-slate-400 max-w-xl mx-auto">
-            Layered glass, calibrated motion, and spatial hierarchy — the details users feel before they read a word.
+          <p className="text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            Small businesses don&apos;t need jargon — they need phones ringing and forms filling. I structure every site
+            so visitors know what you do, why you&apos;re trustworthy, and how to reach you in one tap.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-4 md:gap-5">
+        <div className="grid sm:grid-cols-3 gap-6 mb-16">
           {[
             {
-              title: "Spatial UI",
-              body: "Depth cues, parallax layers, and light that behaves like physical materials.",
-              accent: "from-cyan-500/20 to-transparent",
+              n: 40,
+              suffix: "%",
+              label: "Avg. lift in qualified leads",
+              note: "Typical range reported after launch + local SEO tune-up",
             },
-            {
-              title: "Motion language",
-              body: "Staggered reveals, spring physics, and scroll-linked storytelling — never random easing.",
-              accent: "from-violet-500/20 to-transparent",
-            },
-            {
-              title: "Live surfaces",
-              body: "Glass panels, gradient meshes, and grids that respond to pointer and scroll.",
-              accent: "from-fuchsia-500/20 to-transparent",
-            },
-          ].map((card, i) => (
+            { n: 2, suffix: "×", label: "More inquiry volume", note: "Versus old DIY or outdated sites (client surveys)" },
+            { n: 90, suffix: "%", label: "Mobile traffic ready", note: "Fast, readable, thumb-friendly CTAs" },
+          ].map((s) => (
             <motion.div
-              key={card.title}
-              initial={{ opacity: 0, y: 28 }}
+              key={s.label}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1, duration: 0.55 }}
-              whileHover={{ y: -6, transition: { duration: 0.25 } }}
-              className="group relative rounded-2xl border border-white/10 bg-white/[0.03] p-8 overflow-hidden"
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center"
+            >
+              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent tabular-nums mb-2">
+                <AnimatedCounter value={s.n} suffix={s.suffix} />
+              </div>
+              <div className="text-white font-medium text-sm mb-2">{s.label}</div>
+              <p className="text-xs text-slate-500 leading-snug">{s.note}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {[
+            {
+              quote:
+                "We started getting real quote requests from the website within weeks. Jay actually listened to how we work.",
+              name: "Owner",
+              biz: "Regional home services company",
+            },
+            {
+              quote:
+                "Customers finally say they found us on Google and understood our services before they called. That wasn’t happening with our old site.",
+              name: "Manager",
+              biz: "Local specialty retail",
+            },
+          ].map((t, i) => (
+            <motion.blockquote
+              key={i}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] to-transparent p-8 text-left"
+            >
+              <p className="text-slate-200 leading-relaxed mb-6 text-lg">&ldquo;{t.quote}&rdquo;</p>
+              <footer className="text-sm text-slate-500">
+                <span className="text-white/80">{t.name}</span> · {t.biz}
+              </footer>
+            </motion.blockquote>
+          ))}
+        </div>
+        <p className="text-center text-xs text-slate-500 mt-8 max-w-2xl mx-auto">
+          Figures are illustrative ranges from client feedback and analytics reviews; your market and offer will vary.
+          I&apos;ll set honest expectations for your niche in our first conversation.
+        </p>
+      </section>
+
+      {/* Portfolio */}
+      <section id="portfolio" className="relative z-10 py-24 px-5 max-w-6xl mx-auto scroll-mt-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-14"
+        >
+          <p className="text-indigo-300/90 text-sm font-medium tracking-widest uppercase mb-3">Portfolio</p>
+          <h2
+            className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4"
+            style={{ fontFamily: "var(--font-display), Georgia, serif" }}
+          >
+            Built for owners who wear a lot of hats
+          </h2>
+          <p className="text-slate-400 max-w-2xl mx-auto">
+            From trades to storefronts — each build balances your brand, your local market, and the actions you want
+            customers to take.
+          </p>
+        </motion.div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {PORTFOLIO.map((item, i) => (
+            <motion.article
+              key={item.title}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.06 }}
+              whileHover={{ y: -4 }}
+              className="group rounded-2xl border border-white/10 overflow-hidden bg-white/[0.02] flex flex-col"
             >
               <div
-                className={`absolute inset-0 bg-gradient-to-br ${card.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
-              />
-              <div className="relative z-10">
-                <h3 className="text-lg font-semibold text-white mb-3">{card.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{card.body}</p>
+                className={`h-36 bg-gradient-to-br ${item.gradient} relative`}
+                aria-hidden
+              >
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(3,7,18,0.85))]" />
+                <span className="absolute bottom-3 left-4 text-xs font-medium text-white/90 uppercase tracking-wider">
+                  {item.niche}
+                </span>
               </div>
-            </motion.div>
+              <div className="p-6 flex-1 flex flex-col">
+                <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed flex-1">{item.blurb}</p>
+              </div>
+            </motion.article>
           ))}
         </div>
       </section>
 
-      {/* Parallax strip */}
-      <section id="motion" className="relative z-10 py-8">
-        <div className="relative h-[min(70vh,560px)] flex items-center justify-center overflow-hidden">
+      {/* SEO */}
+      <section id="seo" className="relative z-10 py-24 px-5 max-w-6xl mx-auto scroll-mt-24">
+        <div className="grid lg:grid-cols-2 gap-14 items-start">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+          >
+            <p className="text-indigo-300/90 text-sm font-medium tracking-widest uppercase mb-3">SEO &amp; Google</p>
+            <h2
+              className="text-3xl md:text-4xl font-semibold text-white mb-6"
+              style={{ fontFamily: "var(--font-display), Georgia, serif" }}
+            >
+              Found where your customers already look
+            </h2>
+            <p className="text-slate-400 leading-relaxed mb-8">
+              Pretty isn&apos;t enough — your site needs clean structure, fast load times, and content that matches what
+              people type into search. I bake in technical SEO basics: semantic headings, meta descriptions, sitemap
+              readiness, and performance that helps Core Web Vitals — so you&apos;re not starting from zero when you
+              invest in local rankings.
+            </p>
+            <ul className="space-y-4">
+              {[
+                "Page titles & descriptions tuned for your services and city",
+                "Schema-friendly layout for business info, hours, and reviews",
+                "Speed-focused delivery — slow sites lose leads and rank",
+                "Content hierarchy that reinforces what you want to rank for",
+              ].map((line) => (
+                <li key={line} className="flex gap-3 text-slate-300 text-sm">
+                  <span className="text-emerald-400/90 mt-0.5" aria-hidden>
+                    ✓
+                  </span>
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 lg:p-10"
+          >
+            <h3 className="text-xl font-semibold text-white mb-4">Why this matters for small business</h3>
+            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+              Big agencies sell retainers. I focus on a site that earns trust the second someone lands on it — because
+              for local businesses, the homepage often <em>is</em> the first impression of your whole company.
+            </p>
+            <div className="rounded-xl bg-indigo-500/10 border border-indigo-400/20 p-5 text-sm text-indigo-100/90">
+              &ldquo;If Google can&apos;t understand your pages, customers won&apos;t either. I build both for people and
+              for search — without stuffing keywords or looking spammy.&rdquo;
+              <div className="mt-3 text-indigo-300/80 font-medium">— Jay</div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Service / Why Jay */}
+      <section id="service" className="relative z-10 py-8 scroll-mt-24">
+        <div className="relative h-[min(56vh,480px)] flex items-center justify-center overflow-hidden">
           <motion.div
             className="absolute inset-0 scale-110"
             style={{
               background:
                 "linear-gradient(135deg, rgba(79,70,229,0.35) 0%, rgba(15,23,42,0.95) 45%, rgba(190,24,93,0.2) 100%)",
             }}
-            initial={{ scale: 1.15 }}
-            whileInView={{ scale: 1.05 }}
+            initial={{ scale: 1.12 }}
+            whileInView={{ scale: 1.04 }}
             viewport={{ once: false, amount: 0.4 }}
             transition={{ duration: 1.2 }}
           />
@@ -446,76 +620,51 @@ export default function LandingHome() {
             viewport={{ once: true }}
             className="relative z-10 text-center px-6 max-w-3xl"
           >
-            <p className="text-indigo-200/80 text-sm font-medium tracking-widest uppercase mb-4">Motion design</p>
+            <p className="text-indigo-200/80 text-sm font-medium tracking-widest uppercase mb-4">Customer service</p>
             <p
-              className="text-3xl md:text-5xl font-semibold text-white leading-tight"
+              className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4"
               style={{ fontFamily: "var(--font-display), Georgia, serif" }}
             >
-              Every transition earns its place.
+              You get Jay — not a revolving ticket queue.
+            </p>
+            <p className="text-slate-300/90 text-lg">
+              Clear updates, straight answers, and someone who cares whether your business actually grows.
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* Stats + stack */}
-      <section id="stack" className="relative z-10 py-24 px-5 max-w-6xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <h2
-              className="text-3xl md:text-4xl font-semibold text-white mb-6"
-              style={{ fontFamily: "var(--font-display), Georgia, serif" }}
+      <section className="relative z-10 py-24 px-5 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            {
+              title: "Responsive & honest",
+              body: "I reply in plain language, set realistic timelines, and flag what will move the needle for your shop or service area.",
+            },
+            {
+              title: "Revisions that make sense",
+              body: "Your feedback shapes the launch. We tighten copy, imagery, and CTAs until it feels like your business — not a generic theme.",
+            },
+            {
+              title: "After launch",
+              body: "Need a seasonal promo, new service, or photo swap? I'm here for long-term relationships, not one-off handoffs.",
+            },
+          ].map((card, i) => (
+            <motion.div
+              key={card.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08 }}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-8"
             >
-              Built for velocity
-              <br />
-              <span className="text-indigo-400/90">without sacrificing soul.</span>
-            </h2>
-            <p className="text-slate-400 mb-10 leading-relaxed">
-              Modern stacks, typed components, and deployment pipelines — so your team spends time on differentiation,
-              not glue code.
-            </p>
-            <div className="grid grid-cols-3 gap-6">
-              {[
-                { n: 60, suffix: "+", label: "FPS feel" },
-                { n: 3, suffix: "D", label: "Depth layers" },
-                { n: 100, suffix: "%", label: "Responsive" },
-              ].map((s) => (
-                <div key={s.label} className="text-center sm:text-left">
-                  <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent tabular-nums">
-                    <AnimatedCounter value={s.n} suffix={s.suffix} />
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1 uppercase tracking-wider">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <motion.div
-            initial={{ opacity: 0, rotateX: 8 }}
-            whileInView={{ opacity: 1, rotateX: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-transparent p-8 space-y-4"
-            style={{ transformStyle: "preserve-3d" }}
-          >
-            {["Next.js App Router", "Tailwind CSS", "Framer Motion", "Edge-ready APIs", "Auth & sessions"].map(
-              (tech, i) => (
-                <motion.div
-                  key={tech}
-                  initial={{ opacity: 0, x: -16 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08 }}
-                  className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
-                >
-                  <span className="text-white/90">{tech}</span>
-                  <span className="text-xs text-emerald-400/90 font-mono">● ready</span>
-                </motion.div>
-              )
-            )}
-          </motion.div>
+              <h3 className="text-lg font-semibold text-white mb-3">{card.title}</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">{card.body}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
-      {/* CTA */}
       <section className="relative z-10 py-24 px-5">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
@@ -529,11 +678,11 @@ export default function LandingHome() {
               className="text-2xl md:text-3xl font-semibold text-white mb-4"
               style={{ fontFamily: "var(--font-display), Georgia, serif" }}
             >
-              Ready when you are.
+              Let&apos;s talk about your business
             </h2>
             <p className="text-slate-400 mb-8 max-w-md mx-auto">
-              Create an account to manage your presence, or sign in to continue. Site generation is available to your
-              studio team.
+              Create an account to get started, or sign in if we already work together. I work primarily with small and
+              local businesses who want a site that performs — and a partner who picks up the phone.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
@@ -554,7 +703,8 @@ export default function LandingHome() {
       </section>
 
       <footer className="relative z-10 border-t border-white/5 py-12 px-5 text-center text-sm text-slate-500">
-        <p>© {new Date().getFullYear()} SiteGen AI · Crafted interface design</p>
+        <p className="text-white/70 font-medium mb-1">Website by Jay</p>
+        <p>© {new Date().getFullYear()} Jay · Web design &amp; builds for small businesses</p>
       </footer>
     </div>
   );

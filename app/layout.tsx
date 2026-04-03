@@ -22,11 +22,11 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: {
-    default: "AI Website Builder",
-    template: "%s | AI Website Builder",
+    default: "Website by Jay",
+    template: "%s | Website by Jay",
   },
   description:
-    "Studio-grade web interfaces — motion, depth, and systems for teams who ship fast. AI-powered site tooling for your studio.",
+    "Professional websites for small businesses — SEO-ready builds, fast performance, and personal support from Jay.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   robots: {
     index: true,
@@ -43,16 +43,16 @@ export const metadata: Metadata = {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
   },
   openGraph: {
-    title: "AI Website Builder",
+    title: "Website by Jay",
     description:
-      "Studio-grade web interfaces — motion, depth, and systems for teams who ship fast.",
+      "Professional websites for small businesses — SEO-ready, conversion-focused, with support from Jay.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Website Builder",
+    title: "Website by Jay",
     description:
-      "Studio-grade web interfaces — motion, depth, and systems for teams who ship fast.",
+      "Professional websites for small businesses — SEO-ready, conversion-focused, with support from Jay.",
   },
 };
 
