@@ -2,8 +2,58 @@
 
 import { useRef, useState } from "react";
 import { readResponseJson } from "@/lib/readResponseJson";
-import { compressImportedProject } from "@/lib/compressProjectPayload";
+import { compressImportedProject, recompressDataUrlForSave } from "@/lib/compressProjectPayload";
+import {
+  BLOB_TOKEN_PREFIX,
+  isBlobsFile,
+  splitProjectForExport,
+  type ProjectBlobsFile,
+} from "@/lib/projectExportSplit";
 import type { Project } from "@/types";
+
+function triggerDownload(content: string, filename: string) {
+  const blob = new Blob([content], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+type ParsedImport =
+  | { kind: "full"; project: Project }
+  | { kind: "split"; core: Project; blobsFile: ProjectBlobsFile };
+
+async function parseImportFiles(files: File[]): Promise<ParsedImport> {
+  if (files.length === 1) {
+    const text = await files[0].text();
+    const parsed = JSON.parse(text) as unknown;
+    const raw = (parsed as { project?: unknown }).project ?? parsed;
+    return { kind: "full", project: raw as Project };
+  }
+  if (files.length === 2) {
+    const texts = await Promise.all(files.map((f) => f.text()));
+    const parsed = texts.map((t) => JSON.parse(t) as unknown);
+    let core: Project | null = null;
+    let blobsFile: ProjectBlobsFile | null = null;
+    for (const p of parsed) {
+      if (isBlobsFile(p)) blobsFile = p;
+      else if (p && typeof p === "object" && "id" in (p as object) && "intake" in (p as object)) {
+        core = p as Project;
+      }
+    }
+    if (!core || !blobsFile) {
+      throw new Error(
+        "Two-file import: select both site-backup-…-core.json and site-backup-…-blobs.json (Ctrl+click or Shift+click)."
+      );
+    }
+    return { kind: "split", core, blobsFile };
+  }
+  throw new Error("Use one full backup .json, or exactly two files (core + blobs).");
+}
+
+/** Target ~900k chars per merge request JSON (under typical 4.5MB limits). */
+const MERGE_CHUNK_CHAR_BUDGET = 900_000;
 
 export default function ProjectBackupBar({ projectId }: { projectId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -17,15 +67,22 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
       const res = await fetch(`/api/projects/${projectId}`);
       const data = await readResponseJson<{ project?: unknown; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || "Could not load project.");
-      const blob = new Blob([JSON.stringify(data.project, null, 2)], {
-        type: "application/json",
+      const project = data.project as Project;
+      if (!project) throw new Error("Invalid project payload.");
+
+      const { core, blobsFile } = splitProjectForExport(project);
+      triggerDownload(JSON.stringify(core, null, 2), `site-backup-${projectId}-core.json`);
+      await new Promise((r) => setTimeout(r, 450));
+      triggerDownload(JSON.stringify(blobsFile, null, 2), `site-backup-${projectId}-blobs.json`);
+
+      const n = blobsFile.blobs.length;
+      setMsg({
+        kind: "ok",
+        text:
+          n > 0
+            ? `Downloaded 2 files: core (settings/copy) + blobs (${n} image chunk${n === 1 ? "" : "s"}). Import selects both files together — large sites upload in steps automatically.`
+            : "Downloaded 2 files (no large embedded images — blobs file is empty).",
       });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `site-backup-${projectId}.json`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      setMsg({ kind: "ok", text: "Backup downloaded (saved copy from server)." });
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Export failed." });
     } finally {
@@ -34,26 +91,93 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const list = e.target.files;
     e.target.value = "";
-    if (!file) return;
+    if (!list?.length) return;
+    const files = Array.from(list);
     setMsg(null);
     setBusy("import");
     try {
-      const text = await file.text();
-      const parsed = JSON.parse(text) as unknown;
-      const raw = (parsed as { project?: unknown }).project ?? parsed;
-      const project = await compressImportedProject(raw as Project);
-      const res = await fetch("/api/projects/import", {
+      const parsed = await parseImportFiles(files);
+
+      if (parsed.kind === "full") {
+        if (JSON.stringify(parsed.project).includes(BLOB_TOKEN_PREFIX)) {
+          throw new Error(
+            "This file lists image placeholders only. Import the matching …-blobs.json as well (select both files)."
+          );
+        }
+        const project = await compressImportedProject(parsed.project);
+        const res = await fetch("/api/projects/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project }),
+        });
+        const data = await readResponseJson<{ project?: { id: string }; error?: string; details?: string }>(res);
+        if (!res.ok) {
+          throw new Error(data.details ? `${data.error} (${data.details})` : data.error || "Import failed.");
+        }
+        const id = data.project?.id;
+        if (id && id !== projectId) {
+          window.location.assign(`/admin/${id}`);
+          return;
+        }
+        window.location.reload();
+        return;
+      }
+
+      const { core, blobsFile } = parsed;
+      const compressedBlobs = await Promise.all(blobsFile.blobs.map((b) => recompressDataUrlForSave(b)));
+
+      const importRes = await fetch("/api/projects/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project }),
+        body: JSON.stringify({ project: core }),
       });
-      const data = await readResponseJson<{ project?: { id: string }; error?: string; details?: string }>(res);
-      if (!res.ok) {
-        throw new Error(data.details ? `${data.error} (${data.details})` : data.error || "Import failed.");
+      const importData = await readResponseJson<{ project?: { id: string }; error?: string; details?: string }>(
+        importRes
+      );
+      if (!importRes.ok) {
+        throw new Error(
+          importData.details ? `${importData.error} (${importData.details})` : importData.error || "Import failed."
+        );
       }
-      const id = data.project?.id;
+
+      const pid = core.id;
+      let start = 0;
+      let batch = 1;
+
+      while (start < compressedBlobs.length) {
+        const chunk: string[] = [];
+        let size = 0;
+        for (let i = start; i < compressedBlobs.length; i++) {
+          const b = compressedBlobs[i]!;
+          const overhead = 40;
+          if (chunk.length > 0 && size + b.length + overhead > MERGE_CHUNK_CHAR_BUDGET) break;
+          chunk.push(b);
+          size += b.length + overhead;
+        }
+
+        setMsg({
+          kind: "ok",
+          text: `Uploading image data (batch ${batch})…`,
+        });
+
+        const mergeRes = await fetch(`/api/projects/${encodeURIComponent(pid)}/merge-blobs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ startIndex: start, blobs: chunk }),
+        });
+        const mergeData = await readResponseJson<{ error?: string; details?: string }>(mergeRes);
+        if (!mergeRes.ok) {
+          throw new Error(
+            mergeData.details ? `${mergeData.error} (${mergeData.details})` : mergeData.error || "Merge failed."
+          );
+        }
+        start += chunk.length;
+        batch += 1;
+      }
+
+      const id = importData.project?.id;
       if (id && id !== projectId) {
         window.location.assign(`/admin/${id}`);
         return;
@@ -72,8 +196,9 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
         <div>
           <h2 className="text-sm font-medium">Backup &amp; restore</h2>
           <p className="text-xs text-white/50 mt-1 max-w-xl">
-            Download a JSON file of this site (for moving to production or safekeeping). Import merges into this
-            environment: same project id updates the site; a different id opens that project after reload.
+            <strong className="text-white/70">Download</strong> splits the site into a small <strong className="text-white/70">core</strong> file and a <strong className="text-white/70">blobs</strong> file with large images.{" "}
+            <strong className="text-white/70">Import</strong> uploads core first, then merges images in batches so requests stay under host limits. Select <strong className="text-white/70">both</strong> JSON files together. Older
+            single-file backups still work.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 shrink-0">
@@ -83,7 +208,7 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
             onClick={() => void downloadBackup()}
             className="px-3 py-2 rounded-lg border border-white/20 hover:bg-white/10 text-xs font-medium disabled:opacity-50"
           >
-            {busy === "export" ? "Preparing…" : "Download backup"}
+            {busy === "export" ? "Preparing…" : "Download backup (2 files)"}
           </button>
           <button
             type="button"
@@ -97,6 +222,7 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
             ref={fileRef}
             type="file"
             accept="application/json,.json"
+            multiple
             className="hidden"
             onChange={(ev) => void onFile(ev)}
           />
