@@ -255,6 +255,26 @@ export async function createProject(
   return project;
 }
 
+const DUPLICATE_SUFFIX = " (copy)";
+
+/** Deep-clone a site as a new project (new id, draft, no public slug). Preserves owner when present. */
+export async function duplicateProject(sourceId: string): Promise<Project | null> {
+  const source = await getProject(sourceId);
+  if (!source) return null;
+
+  const intake = JSON.parse(JSON.stringify(source.intake)) as IntakeFormData;
+  const content = JSON.parse(JSON.stringify(source.content)) as GeneratedSiteContent;
+
+  if (!intake.companyName.trimEnd().endsWith(DUPLICATE_SUFFIX)) {
+    intake.companyName = `${intake.companyName.trimEnd()}${DUPLICATE_SUFFIX}`;
+  }
+  if (!content.brandName.trimEnd().endsWith(DUPLICATE_SUFFIX)) {
+    content.brandName = `${content.brandName.trimEnd()}${DUPLICATE_SUFFIX}`;
+  }
+
+  return createProject(intake, content, source.ownerId ? { ownerId: source.ownerId } : undefined);
+}
+
 export async function getProject(id: string): Promise<Project | null> {
   requireWritableStorage();
   const redis = getRedis();

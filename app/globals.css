@@ -85,4 +85,31 @@
     from { opacity: 0; transform: translateY(24px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  /* Marketing landing — animated mesh */
+  .landing-mesh {
+    background:
+      radial-gradient(ellipse 90% 55% at 50% -15%, rgba(99, 102, 241, 0.38), transparent 55%),
+      radial-gradient(ellipse 55% 45% at 100% 35%, rgba(192, 38, 211, 0.14), transparent 60%),
+      radial-gradient(ellipse 50% 50% at 0% 75%, rgba(34, 211, 238, 0.1), transparent 55%),
+      #030712;
+  }
+
+  @keyframes mesh-shift {
+    0%, 100% { opacity: 1; filter: hue-rotate(0deg); }
+    50% { opacity: 0.92; filter: hue-rotate(12deg); }
+  }
+
+  .landing-root .landing-mesh {
+    animation: mesh-shift 18s ease-in-out infinite;
+  }
+
+  @keyframes hero-shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.88; }
+  }
+
+  .landing-hero-shimmer {
+    animation: hero-shimmer 5s ease-in-out infinite;
+  }
 }

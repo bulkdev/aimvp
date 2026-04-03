@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { isMainAdminEmail } from "@/lib/admin-env";
 import { generateSiteContent } from "@/lib/generator";
 import { createProject } from "@/lib/store";
 import type { GenerateRequest, GenerateResponse, ApiError } from "@/types";
@@ -14,6 +15,9 @@ export async function POST(req: NextRequest) {
         { error: "Sign in required to generate a site." },
         { status: 401 }
       );
+    }
+    if (!session.user?.email || !isMainAdminEmail(session.user.email)) {
+      return NextResponse.json<ApiError>({ error: "Only main administrators can generate sites." }, { status: 403 });
     }
 
     const body = (await req.json()) as GenerateRequest;
@@ -35,8 +39,8 @@ export async function POST(req: NextRequest) {
     // Generate content (mock or real AI)
     const content = await generateSiteContent(body.intake);
 
-    // Persist project (owned by signed-in user)
-    const project = await createProject(body.intake, content, { ownerId: session.user.id });
+    // Unassigned until assigned from main admin dashboard
+    const project = await createProject(body.intake, content);
 
     return NextResponse.json<GenerateResponse>({
       projectId: project.id,

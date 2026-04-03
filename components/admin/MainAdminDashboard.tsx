@@ -27,6 +27,9 @@ export default function MainAdminDashboard() {
   const [assignErr, setAssignErr] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
 
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [dupErr, setDupErr] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoadError(null);
     setLoading(true);
@@ -82,6 +85,30 @@ export default function MainAdminDashboard() {
     }
   }
 
+  async function duplicateSite(projectId: string) {
+    setDupErr(null);
+    setDuplicatingId(projectId);
+    try {
+      const res = await fetch(`/api/admin/sites/${encodeURIComponent(projectId)}/duplicate`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Duplicate failed.");
+      }
+      await load();
+      const newId = data.project?.id as string | undefined;
+      if (newId && typeof window !== "undefined") {
+        window.location.href = `/admin/${newId}`;
+      }
+    } catch (e) {
+      setDupErr(e instanceof Error ? e.message : "Duplicate failed.");
+    } finally {
+      setDuplicatingId(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 md:p-10">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -94,6 +121,12 @@ export default function MainAdminDashboard() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <Link
+              href="/admin/generate"
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-sm font-medium shadow-lg shadow-indigo-900/30"
+            >
+              Generate new site
+            </Link>
+            <Link
               href="/"
               className="px-4 py-2 rounded-lg border border-white/20 hover:bg-white/10 text-sm font-medium"
             >
@@ -104,6 +137,9 @@ export default function MainAdminDashboard() {
 
         {loadError && (
           <div className="p-4 rounded-xl bg-red-500/15 border border-red-400/30 text-red-200 text-sm">{loadError}</div>
+        )}
+        {dupErr && (
+          <div className="p-4 rounded-xl bg-red-500/15 border border-red-400/30 text-red-200 text-sm">{dupErr}</div>
         )}
 
         {loading ? (
@@ -154,6 +190,14 @@ export default function MainAdminDashboard() {
                         >
                           Edit
                         </Link>
+                        <button
+                          type="button"
+                          disabled={duplicatingId === s.id}
+                          onClick={() => void duplicateSite(s.id)}
+                          className="px-2.5 py-1 rounded border border-white/20 text-white/90 text-xs hover:bg-white/10 disabled:opacity-50"
+                        >
+                          {duplicatingId === s.id ? "Duplicating…" : "Duplicate"}
+                        </button>
                         <button
                           type="button"
                           onClick={() => {

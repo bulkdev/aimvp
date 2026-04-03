@@ -25,7 +25,8 @@ export const metadata: Metadata = {
     default: "AI Website Builder",
     template: "%s | AI Website Builder",
   },
-  description: "Generate professional small-business websites in seconds.",
+  description:
+    "Studio-grade web interfaces — motion, depth, and systems for teams who ship fast. AI-powered site tooling for your studio.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   robots: {
     index: true,
@@ -43,13 +44,15 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "AI Website Builder",
-    description: "Generate professional small-business websites in seconds.",
+    description:
+      "Studio-grade web interfaces — motion, depth, and systems for teams who ship fast.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "AI Website Builder",
-    description: "Generate professional small-business websites in seconds.",
+    description:
+      "Studio-grade web interfaces — motion, depth, and systems for teams who ship fast.",
   },
 };
 
