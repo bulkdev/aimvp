@@ -6,6 +6,8 @@ import { normalizeNap } from "@/lib/seo";
 import NavbarSection from "./sections/NavbarSection";
 import HeroSection from "./sections/HeroSection";
 import PlumbingHeroSection from "./sections/PlumbingHeroSection";
+import PlumbingFlowHeroSection from "./sections/plumbing-flow/PlumbingFlowHeroSection";
+import PlumbingFlowNavbar from "./sections/plumbing-flow/PlumbingFlowNavbar";
 import ServicesSection from "./sections/ServicesSection";
 import PortfolioSection from "./sections/PortfolioSection";
 import AboutSection from "./sections/AboutSection";
@@ -51,13 +53,17 @@ export default function SiteTemplate({ project }: Props) {
       ? "split"
       : intake.siteTemplate === "plumbing-boxed"
         ? "boxed"
-        : "classic";
+        : intake.siteTemplate === "plumbing-flow"
+          ? "flow"
+          : "classic";
   const presetLayoutVariant =
     plumbingPreset === "split"
       ? "services-first"
       : plumbingPreset === "boxed"
         ? "about-first"
-        : "standard";
+        : plumbingPreset === "flow"
+          ? "services-first"
+          : "standard";
   const layoutVariant =
     variant === "plumbing"
       ? content.assets?.layoutVariant ?? presetLayoutVariant
@@ -223,6 +229,12 @@ export default function SiteTemplate({ project }: Props) {
     hero:
       variant === "superService" ? (
         <SuperServiceHero content={content} intake={intake} />
+      ) : variant === "plumbing" && plumbingPreset === "flow" ? (
+        <PlumbingFlowHeroSection
+          content={content}
+          intake={intake}
+          slideshowVariant={effectiveDesign?.heroSlideshow ?? "fade"}
+        />
       ) : variant === "plumbing" ? (
         <PlumbingHeroSection
           content={content}
@@ -237,7 +249,13 @@ export default function SiteTemplate({ project }: Props) {
       variant === "superService" ? (
         <SuperServiceTradeCards content={content} intake={intake} />
       ) : (
-        <ServicesSection content={content} intake={intake} isPlumbing={variant === "plumbing"} linkProject={project} />
+        <ServicesSection
+          content={content}
+          intake={intake}
+          isPlumbing={variant === "plumbing"}
+          plumbingFlow={variant === "plumbing" && plumbingPreset === "flow"}
+          linkProject={project}
+        />
       ),
     portfolio: <PortfolioSection content={content} styleVariant={effectiveDesign?.ourWork ?? "cards"} />,
     about:
@@ -365,6 +383,8 @@ export default function SiteTemplate({ project }: Props) {
             <SuperServiceTopBar />
             <SuperServiceNavbar content={content} intake={intake} />
           </>
+        ) : variant === "plumbing" && plumbingPreset === "flow" ? (
+          <PlumbingFlowNavbar content={content} intake={intake} />
         ) : (
           <NavbarSection
             content={content}

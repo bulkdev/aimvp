@@ -7,6 +7,8 @@ export type SiteTemplateChoice =
   | "plumbing"
   | "plumbing-split"
   | "plumbing-boxed"
+  /** Compact slider hero + glass nav (same trade layout as other plumbing templates) */
+  | "plumbing-flow"
   /** Multi-trade HVAC/plumbing style: promo bar, Book Online, trade cards, areas grid */
   | "super-service";
 

@@ -66,7 +66,7 @@ Generate a professional website content JSON for this local business:
 
 Company Name: ${intake.companyName}
 Business Description: ${intake.businessDescription}
-Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; super-service = multi-trade HVAC/plumbing style with service areas)
+Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; plumbing-flow = compact slider hero + glass nav; super-service = multi-trade HVAC/plumbing style with service areas)
 Source Link (optional): ${intake.sourceLink || "N/A"}
 ${optionals}
 Booking: ${intake.bookingEnabled ? "Yes" : "No"}

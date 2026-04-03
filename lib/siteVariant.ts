@@ -66,7 +66,9 @@ export function resolveSiteVariant(
   companyName = ""
 ): SiteTemplateVariant {
   if (choice === "super-service") return "superService";
-  if (choice === "plumbing" || choice === "plumbing-split" || choice === "plumbing-boxed") return "plumbing";
+  if (choice === "plumbing" || choice === "plumbing-split" || choice === "plumbing-boxed" || choice === "plumbing-flow") {
+    return "plumbing";
+  }
   if (choice === "default") return "default";
   return inferSiteVariant(description, companyName);
 }

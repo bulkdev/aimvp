@@ -234,6 +234,7 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
               <option value="plumbing">Plumbing — Classic navbar & hero</option>
               <option value="plumbing-split">Plumbing — Split bar navbar & hero</option>
               <option value="plumbing-boxed">Plumbing — Boxed glass navbar & hero</option>
+              <option value="plumbing-flow">Plumbing — Flow (compact slider + glass nav)</option>
               <option value="super-service">Super Service — Multi-trade HVAC/plumbing style</option>
             </select>
             <p className="text-white/35 text-xs mt-1.5">
