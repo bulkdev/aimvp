@@ -344,11 +344,6 @@ export default function LandingPortfolioShowcase() {
           </IphonePortfolioFrame>
         </motion.div>
       </div>
-
-      <p className="text-center text-xs text-slate-500">
-        Embeds use your published site URL (not preview), so visitors see the real experience. Loading depends on each
-        build.
-      </p>
     </div>
   );
 }

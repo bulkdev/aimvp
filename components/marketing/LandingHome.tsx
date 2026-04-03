@@ -561,10 +561,6 @@ export default function LandingHome() {
             </motion.blockquote>
           ))}
         </div>
-        <p className="text-center text-xs text-slate-500 mt-8 max-w-2xl mx-auto">
-          Figures are illustrative ranges from client feedback and analytics reviews; your market and offer will vary.
-          I&apos;ll set honest expectations for your niche in our first conversation.
-        </p>
       </section>
 
       {/* Portfolio */}

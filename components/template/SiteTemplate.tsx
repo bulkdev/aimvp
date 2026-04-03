@@ -252,7 +252,7 @@ export default function SiteTemplate({ project }: Props) {
         <CtaBanner content={content} intake={intake} />
       ),
     payment: intake.paymentEnabled ? <PaymentSection content={content} /> : null,
-    contact: <ContactSection content={content} intake={intake} />,
+    contact: <ContactSection content={content} intake={intake} projectId={project.id} />,
   };
   return (
     <div

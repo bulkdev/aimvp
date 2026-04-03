@@ -1,6 +1,9 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { isMainAdminEmail } from "@/lib/admin-env";
+import { getClientIpFromRequest } from "@/lib/client-ip";
+import { rateLimitAllow } from "@/lib/rate-limit";
+import { isTurnstileConfigured, verifyTurnstileToken } from "@/lib/turnstile";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -11,8 +14,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        turnstileToken: { label: "Turnstile", type: "text" },
       },
-      authorize: async (credentials) => {
+      authorize: async (credentials, request) => {
+        const ip = getClientIpFromRequest(request);
+        const { allowed } = await rateLimitAllow(`login:${ip}`, "loginTry");
+        if (!allowed) return null;
+
+        if (isTurnstileConfigured()) {
+          const token =
+            typeof credentials?.turnstileToken === "string" ? credentials.turnstileToken : "";
+          const ok = await verifyTurnstileToken(token, request);
+          if (!ok) return null;
+        }
+
         if (!credentials?.email || !credentials?.password) return null;
         const [{ getUserByEmail }, { verifyPassword }] = await Promise.all([
           import("@/lib/auth-users"),

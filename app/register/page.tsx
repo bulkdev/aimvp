@@ -4,24 +4,39 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { TurnstileField } from "@/components/security/TurnstileField";
+
+const hasTurnstile = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [websiteHoneypot, setWebsiteHoneypot] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(hasTurnstile ? null : "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (hasTurnstile && !turnstileToken) {
+      setError("Please complete the captcha.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name: name.trim() || undefined }),
+        body: JSON.stringify({
+          email,
+          password,
+          name: name.trim() || undefined,
+          website: websiteHoneypot,
+          turnstileToken: turnstileToken || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -56,7 +71,22 @@ export default function RegisterPage() {
           <div className="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-400/30 text-red-200 text-sm">{error}</div>
         )}
 
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="relative space-y-4">
+          <div
+            className="absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0 pointer-events-none"
+            aria-hidden="true"
+          >
+            <label htmlFor="reg-website-hp">Website</label>
+            <input
+              id="reg-website-hp"
+              name="website"
+              type="text"
+              tabIndex={-1}
+              autoComplete="off"
+              value={websiteHoneypot}
+              onChange={(e) => setWebsiteHoneypot(e.target.value)}
+            />
+          </div>
           <div>
             <label className="block text-xs font-medium text-white/70 mb-1">Name (optional)</label>
             <input
@@ -90,9 +120,10 @@ export default function RegisterPage() {
               className="w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white placeholder:text-white/35"
             />
           </div>
+          <TurnstileField onToken={setTurnstileToken} theme="dark" />
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (hasTurnstile && !turnstileToken)}
             className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium"
           >
             {loading ? "Creating…" : "Create account"}

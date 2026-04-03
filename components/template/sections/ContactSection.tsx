@@ -3,27 +3,75 @@
 import React, { useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
 import { normalizeNap } from "@/lib/seo";
+import { TurnstileField } from "@/components/security/TurnstileField";
 
 interface Props {
   content: GeneratedSiteContent;
   intake: IntakeFormData;
+  projectId: string;
 }
 
-export default function ContactSection({ content, intake }: Props) {
-  const [sent, setSent] = useState(false);
+const hasTurnstile = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+
+export default function ContactSection({ content, intake, projectId }: Props) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [serviceType, setServiceType] = useState("");
+  const [message, setMessage] = useState("");
+  const [websiteHoneypot, setWebsiteHoneypot] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(hasTurnstile ? null : "");
+  const [status, setStatus] = useState<"idle" | "loading" | "error" | "success">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
   const nap = normalizeNap(intake);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // In production: POST to a form handler or Netlify/Resend/EmailJS
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("lead_submit", {
-          detail: { form: "contact", section: "contact" },
-        })
-      );
+    if (hasTurnstile && !turnstileToken) {
+      setErrorMessage("Please complete the captcha.");
+      setStatus("error");
+      return;
     }
-    setSent(true);
+    setStatus("loading");
+    setErrorMessage("");
+    try {
+      const res = await fetch("/api/site-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          firstName,
+          lastName,
+          email,
+          phone,
+          address,
+          serviceType,
+          message,
+          website: websiteHoneypot,
+          turnstileToken: turnstileToken || undefined,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setStatus("error");
+        setErrorMessage(typeof data.error === "string" ? data.error : "Something went wrong.");
+        return;
+      }
+      setStatus("success");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("lead_submit", {
+            detail: { form: "contact", section: "contact" },
+          })
+        );
+      }
+    } catch {
+      setStatus("error");
+      setErrorMessage("Network error. Please try again.");
+    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -58,7 +106,6 @@ export default function ContactSection({ content, intake }: Props) {
             alignItems: "start",
           }}
         >
-          {/* Left: info */}
           <div>
             <span className="section-label">Contact</span>
             <h2
@@ -78,7 +125,6 @@ export default function ContactSection({ content, intake }: Props) {
               {content.contact.subheading}
             </p>
 
-            {/* Contact details */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {nap.phone && (
                 <ContactRow
@@ -118,7 +164,6 @@ export default function ContactSection({ content, intake }: Props) {
             </div>
           </div>
 
-          {/* Right: form */}
           <div
             style={{
               background: "#f8f9fc",
@@ -127,7 +172,7 @@ export default function ContactSection({ content, intake }: Props) {
               border: "1px solid rgba(0,0,0,0.06)",
             }}
           >
-            {sent ? (
+            {status === "success" ? (
               <div style={{ textAlign: "center", padding: "32px 0" }}>
                 <div
                   style={{
@@ -153,32 +198,73 @@ export default function ContactSection({ content, intake }: Props) {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+              <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }} className="relative">
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <div>
                     <label style={labelStyle}>First Name</label>
-                    <input type="text" placeholder="Jane" style={inputStyle} required />
+                    <input
+                      type="text"
+                      placeholder="Jane"
+                      style={inputStyle}
+                      required
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
                   </div>
                   <div>
                     <label style={labelStyle}>Last Name</label>
-                    <input type="text" placeholder="Smith" style={inputStyle} required />
+                    <input
+                      type="text"
+                      placeholder="Smith"
+                      style={inputStyle}
+                      required
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div>
                   <label style={labelStyle}>Email</label>
-                  <input type="email" placeholder="jane@example.com" style={inputStyle} required />
+                  <input
+                    type="email"
+                    placeholder="jane@example.com"
+                    style={inputStyle}
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label style={labelStyle}>Phone (optional)</label>
-                  <input type="tel" placeholder="(555) 000-0000" style={inputStyle} />
+                  <input
+                    type="tel"
+                    placeholder="(555) 000-0000"
+                    style={inputStyle}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label style={labelStyle}>Address</label>
-                  <input type="text" name="address" placeholder="123 Main St, City, State" style={inputStyle} />
+                  <input
+                    type="text"
+                    name="address"
+                    placeholder="123 Main St, City, State"
+                    style={inputStyle}
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label style={labelStyle}>Service Type</label>
-                  <input type="text" name="serviceType" placeholder="e.g. Drain cleaning, Water heater repair" style={inputStyle} />
+                  <input
+                    type="text"
+                    name="serviceType"
+                    placeholder="e.g. Drain cleaning, Water heater repair"
+                    style={inputStyle}
+                    value={serviceType}
+                    onChange={(e) => setServiceType(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label style={labelStyle}>Message</label>
@@ -186,15 +272,42 @@ export default function ContactSection({ content, intake }: Props) {
                     placeholder="Tell us about your project or question…"
                     style={{ ...inputStyle, minHeight: "110px", resize: "vertical" }}
                     required
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
                   />
                 </div>
+
+                <div
+                  className="absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0 pointer-events-none"
+                  aria-hidden="true"
+                >
+                  <label htmlFor="contact-website-hp">Website</label>
+                  <input
+                    id="contact-website-hp"
+                    name="website"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={websiteHoneypot}
+                    onChange={(e) => setWebsiteHoneypot(e.target.value)}
+                  />
+                </div>
+
+                <TurnstileField onToken={setTurnstileToken} theme="light" />
+
+                {status === "error" && errorMessage ? (
+                  <p style={{ color: "#b91c1c", fontSize: "14px", margin: 0 }} role="alert">
+                    {errorMessage}
+                  </p>
+                ) : null}
 
                 <button
                   type="submit"
                   className="btn-primary"
                   style={{ textAlign: "center", width: "100%" }}
+                  disabled={status === "loading"}
                 >
-                  Send Message
+                  {status === "loading" ? "Sending…" : "Send Message"}
                 </button>
               </form>
             )}

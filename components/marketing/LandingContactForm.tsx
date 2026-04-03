@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { TurnstileField } from "@/components/security/TurnstileField";
 
 const inputClass =
   "w-full rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40";
+
+const hasTurnstile = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export function LandingContactForm() {
   const [companyName, setCompanyName] = useState("");
@@ -11,18 +14,33 @@ export function LandingContactForm() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [description, setDescription] = useState("");
+  const [websiteHoneypot, setWebsiteHoneypot] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(hasTurnstile ? null : "");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (hasTurnstile && !turnstileToken) {
+      setErrorMessage("Please complete the captcha.");
+      setStatus("error");
+      return;
+    }
     setStatus("loading");
     setErrorMessage("");
     try {
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName, location, email, phone, description }),
+        body: JSON.stringify({
+          companyName,
+          location,
+          email,
+          phone,
+          description,
+          website: websiteHoneypot,
+          turnstileToken: turnstileToken || undefined,
+        }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -51,7 +69,7 @@ export function LandingContactForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 text-left max-w-xl mx-auto">
+    <form onSubmit={onSubmit} className="relative space-y-4 text-left max-w-xl mx-auto">
       <div>
         <label htmlFor="lead-company" className="block text-xs font-medium text-slate-400 mb-1.5">
           Company name <span className="text-rose-400/90">*</span>
@@ -130,6 +148,22 @@ export function LandingContactForm() {
           placeholder="Briefly describe your business, goals, or timeline."
         />
       </div>
+      <div
+        className="absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0 pointer-events-none"
+        aria-hidden="true"
+      >
+        <label htmlFor="lead-website-hp">Website</label>
+        <input
+          id="lead-website-hp"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={websiteHoneypot}
+          onChange={(e) => setWebsiteHoneypot(e.target.value)}
+        />
+      </div>
+      <TurnstileField onToken={setTurnstileToken} theme="dark" />
       {status === "error" && errorMessage ? (
         <p className="text-sm text-rose-400/95" role="alert">
           {errorMessage}

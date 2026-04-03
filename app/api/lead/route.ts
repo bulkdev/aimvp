@@ -3,6 +3,10 @@ import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 import { Redis } from "@upstash/redis";
+import { isSmtpConfigured, sendLeadEmail } from "@/lib/lead-email";
+import { rateLimitAllow } from "@/lib/rate-limit";
+import { getClientIpFromRequest } from "@/lib/client-ip";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 const LEADS_KEY = "landing:leads";
 
@@ -21,6 +25,12 @@ function trimStr(v: unknown, max: number): string {
 }
 
 export async function POST(req: Request) {
+  const ip = getClientIpFromRequest(req);
+  const rl = await rateLimitAllow(`lead:${ip}`, "lead");
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -33,6 +43,16 @@ export async function POST(req: Request) {
   }
 
   const b = body as Record<string, unknown>;
+
+  if (typeof b.website === "string" && b.website.trim() !== "") {
+    await new Promise((r) => setTimeout(r, 400));
+    return NextResponse.json({ ok: true });
+  }
+
+  if (!(await verifyTurnstileToken(typeof b.turnstileToken === "string" ? b.turnstileToken : undefined, req))) {
+    return NextResponse.json({ error: "Captcha verification failed." }, { status: 400 });
+  }
+
   const companyName = trimStr(b.companyName, 200);
   const location = trimStr(b.location, 300);
   const email = trimStr(b.email, 320);
@@ -55,6 +75,31 @@ export async function POST(req: Request) {
     description,
     createdAt: new Date().toISOString(),
   };
+
+  if (isSmtpConfigured()) {
+    const sent = await sendLeadEmail({
+      companyName,
+      location,
+      email,
+      phone,
+      description,
+    });
+    if (!sent.ok) {
+      return NextResponse.json(
+        { error: "Could not send your message. Please try again later." },
+        { status: 503 }
+      );
+    }
+    const redis = getRedis();
+    if (redis) {
+      try {
+        await redis.lpush(LEADS_KEY, JSON.stringify(record));
+      } catch {
+        /* email already delivered; backup optional */
+      }
+    }
+    return NextResponse.json({ ok: true });
+  }
 
   const redis = getRedis();
   if (redis) {

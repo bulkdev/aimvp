@@ -4,6 +4,9 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
+import { TurnstileField } from "@/components/security/TurnstileField";
+
+const hasTurnstile = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 function LoginForm() {
   const router = useRouter();
@@ -11,16 +14,22 @@ function LoginForm() {
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(hasTurnstile ? null : "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (hasTurnstile && !turnstileToken) {
+      setError("Please complete the captcha.");
+      return;
+    }
     setLoading(true);
     const res = await signIn("credentials", {
       email,
       password,
+      turnstileToken: turnstileToken || "",
       redirect: false,
     });
     setLoading(false);
@@ -65,9 +74,10 @@ function LoginForm() {
               className="w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white placeholder:text-white/35"
             />
           </div>
+          <TurnstileField onToken={setTurnstileToken} theme="dark" />
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (hasTurnstile && !turnstileToken)}
             className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium"
           >
             {loading ? "Signing in…" : "Sign in"}
