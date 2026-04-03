@@ -29,8 +29,6 @@ export default function StatsSection({
   const items = (content.assets?.siteStats?.length ? content.assets.siteStats : DEFAULT_STATS).filter(
     (s) => s.label?.trim() && s.value?.trim()
   );
-  if (items.length === 0) return null;
-
   const dark = siteVariant === "renovations";
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
@@ -38,6 +36,8 @@ export default function StatsSection({
     offset: ["start end", "end start"],
   });
   const bgY = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
+  if (items.length === 0) return null;
+
   const showParallax = Boolean(parallaxImageUrl?.trim());
   const scrim = Math.min(100, Math.max(0, parallaxOverlayOpacity)) / 100;
 

@@ -1,5 +1,5 @@
 import React from "react";
-import type { GeneratedSiteContent, Project } from "@/types";
+import type { Project } from "@/types";
 import { buildThemeCssVars } from "@/lib/utils";
 import { resolveSiteVariant } from "@/lib/siteVariant";
 import { normalizeNap } from "@/lib/seo";

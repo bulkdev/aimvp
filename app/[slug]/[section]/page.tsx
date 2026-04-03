@@ -4,7 +4,7 @@ import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProjectByPublicSlug } from "@/lib/store";
 import { buildPublishedBasePath, isReservedPublicSlug, publicPagesEnabled } from "@/lib/seo";
 import { buildSubpageMetadata } from "@/lib/subpage-metadata";
-import { isSubpagePathSegment, pathSegmentToSection, type SubpagePathSegment } from "@/lib/published-subpages";
+import { isSubpagePathSegment, pathSegmentToSection } from "@/lib/published-subpages";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
