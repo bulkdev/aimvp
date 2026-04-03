@@ -21,10 +21,8 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  /** No `template` — client sites must use full `title.absolute` so their titles are never suffixed with the studio name (keeps brand search results on the homepage). */
-  title: {
-    default: "Website by Jay",
-  },
+  /** Plain string (not `{ default }` without `template`) — Next.js types require `template` for title objects. Client routes use `title.absolute` so previews are never suffixed with the studio name. */
+  title: "Website by Jay",
   description:
     "Professional websites for small businesses — SEO-ready builds, fast performance, and personal support from Jay.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
