@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const canonical = absoluteUrl(buildPublishedBasePath(project));
   const ogImage = project.content.assets?.heroSlides?.[0] || project.intake.logoDataUrl || undefined;
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical },
     robots: { index: true, follow: true },

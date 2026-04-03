@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import type { ShowcaseSite } from "@/lib/showcase-portfolio";
 
 type SiteRow = {
   id: string;
@@ -30,22 +31,72 @@ export default function MainAdminDashboard() {
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [dupErr, setDupErr] = useState<string | null>(null);
 
+  const [portfolioSites, setPortfolioSites] = useState<ShowcaseSite[]>([]);
+  const [portfolioErr, setPortfolioErr] = useState<string | null>(null);
+  const [portfolioSaveErr, setPortfolioSaveErr] = useState<string | null>(null);
+  const [portfolioSaving, setPortfolioSaving] = useState(false);
+
   const load = useCallback(async () => {
     setLoadError(null);
+    setPortfolioErr(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/sites", { credentials: "include" });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to load sites.");
+      const [sitesRes, showcaseRes] = await Promise.all([
+        fetch("/api/admin/sites", { credentials: "include" }),
+        fetch("/api/admin/showcase", { credentials: "include" }),
+      ]);
+      const sitesData = await sitesRes.json();
+      const showcaseData = await showcaseRes.json();
+      if (!sitesRes.ok) {
+        throw new Error(sitesData.error || "Failed to load sites.");
       }
-      setSites(data.sites ?? []);
+      if (!showcaseRes.ok) {
+        setPortfolioErr(showcaseData.error || "Failed to load homepage portfolio.");
+        setPortfolioSites([]);
+      } else {
+        setPortfolioSites(Array.isArray(showcaseData.sites) ? showcaseData.sites : []);
+      }
+      setSites(sitesData.sites ?? []);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Failed to load.");
     } finally {
       setLoading(false);
     }
   }, []);
+
+  function movePortfolioEntry(index: number, dir: -1 | 1) {
+    setPortfolioSites((prev) => {
+      const next = [...prev];
+      const j = index + dir;
+      if (j < 0 || j >= next.length) return prev;
+      const tmp = next[index]!;
+      next[index] = next[j]!;
+      next[j] = tmp;
+      return next;
+    });
+  }
+
+  async function savePortfolio() {
+    setPortfolioSaveErr(null);
+    setPortfolioSaving(true);
+    try {
+      const res = await fetch("/api/admin/showcase", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sites: portfolioSites }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Save failed.");
+      }
+      setPortfolioSites(Array.isArray(data.sites) ? data.sites : portfolioSites);
+    } catch (e) {
+      setPortfolioSaveErr(e instanceof Error ? e.message : "Save failed.");
+    } finally {
+      setPortfolioSaving(false);
+    }
+  }
 
   useEffect(() => {
     void load();
@@ -140,6 +191,129 @@ export default function MainAdminDashboard() {
         )}
         {dupErr && (
           <div className="p-4 rounded-xl bg-red-500/15 border border-red-400/30 text-red-200 text-sm">{dupErr}</div>
+        )}
+
+        {!loading && (
+          <section className="rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.07] p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Homepage portfolio</h2>
+              <p className="text-sm text-white/55 mt-1 max-w-3xl">
+                Choose which generated sites appear as the phone + desktop iframe demos on the public homepage. Set the
+                pill label for each (e.g. Plumbing, Barber). Order matches the tab order on the home page.
+              </p>
+            </div>
+            {portfolioErr && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-400/25 text-amber-100 text-sm">
+                {portfolioErr}
+              </div>
+            )}
+            {portfolioSaveErr && (
+              <div className="p-3 rounded-lg bg-red-500/15 border border-red-400/30 text-red-200 text-sm">
+                {portfolioSaveErr}
+              </div>
+            )}
+            <div className="space-y-3">
+              {portfolioSites.map((entry, index) => {
+                const siteMeta = sites.find((s) => s.id === entry.projectId);
+                return (
+                  <div
+                    key={entry.projectId}
+                    className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-3"
+                  >
+                    <label className="flex-1 min-w-[140px]">
+                      <span className="text-[10px] uppercase tracking-wider text-white/45 block mb-1">Pill label</span>
+                      <input
+                        type="text"
+                        value={entry.label}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setPortfolioSites((prev) =>
+                            prev.map((p, i) => (i === index ? { ...p, label: v } : p))
+                          );
+                        }}
+                        className="w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white text-sm"
+                      />
+                    </label>
+                    <div className="flex-1 min-w-[180px] text-sm">
+                      <span className="text-[10px] uppercase tracking-wider text-white/45 block mb-1">Site</span>
+                      <span className="text-white/85">{siteMeta?.brandName ?? "Unknown site"}</span>
+                      <code className="block text-[10px] text-white/35 font-mono mt-0.5">{entry.projectId}</code>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => movePortfolioEntry(index, -1)}
+                        className="px-2 py-1.5 rounded-lg border border-white/15 text-xs hover:bg-white/10 disabled:opacity-30"
+                        aria-label="Move up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index >= portfolioSites.length - 1}
+                        onClick={() => movePortfolioEntry(index, 1)}
+                        className="px-2 py-1.5 rounded-lg border border-white/15 text-xs hover:bg-white/10 disabled:opacity-30"
+                        aria-label="Move down"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPortfolioSites((prev) => prev.filter((_, i) => i !== index))
+                        }
+                        className="px-2 py-1.5 rounded-lg border border-red-400/30 text-red-200/90 text-xs hover:bg-red-500/10"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {portfolioSites.length === 0 && (
+                <p className="text-sm text-white/45">No sites selected yet — add one below.</p>
+              )}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-end pt-1">
+              <label className="flex-1 max-w-md">
+                <span className="text-[10px] uppercase tracking-wider text-white/45 block mb-1">Add site</span>
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    e.target.value = "";
+                    if (!id) return;
+                    const site = sites.find((s) => s.id === id);
+                    if (!site) return;
+                    if (portfolioSites.some((p) => p.projectId === id)) return;
+                    setPortfolioSites((prev) => [
+                      ...prev,
+                      { projectId: id, label: site.brandName.slice(0, 80) },
+                    ]);
+                  }}
+                  className="w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white text-sm"
+                >
+                  <option value="">Choose a site…</option>
+                  {sites
+                    .filter((s) => !portfolioSites.some((p) => p.projectId === s.id))
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.brandName}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                disabled={portfolioSaving}
+                onClick={() => void savePortfolio()}
+                className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium disabled:opacity-50 shrink-0"
+              >
+                {portfolioSaving ? "Saving…" : "Save homepage portfolio"}
+              </button>
+            </div>
+          </section>
         )}
 
         {loading ? (

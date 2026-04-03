@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `${project.content.brandName} provides ${primaryService.toLowerCase()} in ${areaName}. Fast response, quality workmanship, and trusted local service.`;
   const canonical = absoluteUrl(`/${slug}/areas/${area}`);
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical },
     openGraph: { title, description, type: "website", url: canonical },

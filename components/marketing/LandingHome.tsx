@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { LandingContactForm } from "@/components/marketing/LandingContactForm";
+import LandingPortfolioShowcase from "@/components/marketing/LandingPortfolioShowcase";
+import { MARKETING_REGION_LABEL, MARKETING_SERVICE_CITIES } from "@/lib/marketing-seo";
 import {
   motion,
   useScroll,
@@ -91,45 +94,6 @@ function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: strin
   );
 }
 
-const PORTFOLIO = [
-  {
-    title: "Trade & home services",
-    niche: "Plumbing · HVAC · electrical",
-    blurb: "Emergency-first layouts, service areas, and phone CTAs that turn searches into booked jobs.",
-    gradient: "from-cyan-500/30 to-slate-900/80",
-  },
-  {
-    title: "Local retail & shops",
-    niche: "Boutiques · specialty stores",
-    blurb: "Hours, directions, and product stories that make first-time visitors confident to walk in.",
-    gradient: "from-violet-500/25 to-slate-900/80",
-  },
-  {
-    title: "Professional services",
-    niche: "Consulting · legal · finance",
-    blurb: "Credibility-first pages: clear expertise, trust signals, and easy contact for high-intent leads.",
-    gradient: "from-indigo-500/30 to-slate-900/80",
-  },
-  {
-    title: "Contractors & builders",
-    niche: "Remodel · roofing · landscaping",
-    blurb: "Project galleries, reviews, and quote flows built around how homeowners actually decide.",
-    gradient: "from-amber-500/20 to-slate-900/80",
-  },
-  {
-    title: "Food & hospitality",
-    niche: "Restaurants · cafés · catering",
-    blurb: "Menus, reservations, and mobile-friendly paths from Google Maps to your table.",
-    gradient: "from-rose-500/25 to-slate-900/80",
-  },
-  {
-    title: "Health & wellness",
-    niche: "Clinics · fitness · spas",
-    blurb: "Appointment-focused UX, insurance and location clarity, and review-friendly structure.",
-    gradient: "from-emerald-500/25 to-slate-900/80",
-  },
-];
-
 export default function LandingHome() {
   const { data: session, status } = useSession();
   const heroRef = useRef<HTMLDivElement>(null);
@@ -212,6 +176,9 @@ export default function LandingHome() {
             <a href="#service" className="hover:text-white transition-colors">
               Why Jay
             </a>
+            <a href="#contact" className="hover:text-white transition-colors">
+              Contact
+            </a>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -232,17 +199,12 @@ export default function LandingHome() {
                 </Link>
               </>
             ) : (
-              <>
-                <Link href="/login" className="text-sm text-white/70 hover:text-white px-2 py-2">
-                  Sign in
-                </Link>
-                <Link
-                  href="/register"
-                  className="text-sm font-medium px-4 py-2 rounded-lg bg-white text-slate-900 hover:bg-white/90 transition-colors"
-                >
-                  Get started
-                </Link>
-              </>
+              <a
+                href="#contact"
+                className="text-sm font-medium px-4 py-2 rounded-lg bg-white text-slate-900 hover:bg-white/90 transition-colors"
+              >
+                Let&apos;s talk
+              </a>
             )}
           </div>
         </div>
@@ -292,9 +254,18 @@ export default function LandingHome() {
               person (me), not a call center.
             </motion.p>
 
-            <motion.div
+            <motion.p
               variants={fadeInUp}
               custom={3}
+              className="text-sm md:text-base text-slate-500 max-w-2xl mx-auto leading-relaxed"
+            >
+              <span className="text-slate-400">Service area — </span>
+              {MARKETING_REGION_LABEL}: {MARKETING_SERVICE_CITIES.join(", ")}, and nearby Massachusetts communities.
+            </motion.p>
+
+            <motion.div
+              variants={fadeInUp}
+              custom={4}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
             >
               <a
@@ -414,46 +385,150 @@ export default function LandingHome() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-14"
+          className="text-center mb-12 md:mb-16"
         >
-          <p className="text-indigo-300/90 text-sm font-medium tracking-widest uppercase mb-3">Outcomes that matter</p>
+          <p className="text-indigo-300/90 text-sm font-medium tracking-widest uppercase mb-3">
+            Real outcomes for real businesses
+          </p>
           <h2
-            className="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-4"
+            className="text-3xl md:text-[2.75rem] font-semibold tracking-tight text-white mb-4 leading-tight"
             style={{ fontFamily: "var(--font-display), Georgia, serif" }}
           >
-            More visibility → more conversations → more sales
+            More visibility → more conversations →{" "}
+            <span className="bg-gradient-to-r from-amber-200 to-amber-400 bg-clip-text text-transparent">
+              more revenue
+            </span>
           </h2>
-          <p className="text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Small businesses don&apos;t need jargon — they need phones ringing and forms filling. I structure every site
-            so visitors know what you do, why you&apos;re trustworthy, and how to reach you in one tap.
+          <p className="text-slate-400 max-w-2xl mx-auto leading-relaxed text-base md:text-lg">
+            You care about calls, bookings, and quotes — not buzzwords. Here&apos;s what similar small businesses report
+            after upgrading from outdated or DIY sites.
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-3 gap-6 mb-16">
-          {[
-            {
-              n: 40,
-              suffix: "%",
-              label: "Avg. lift in qualified leads",
-              note: "Typical range reported after launch + local SEO tune-up",
-            },
-            { n: 2, suffix: "×", label: "More inquiry volume", note: "Versus old DIY or outdated sites (client surveys)" },
-            { n: 90, suffix: "%", label: "Mobile traffic ready", note: "Fast, readable, thumb-friendly CTAs" },
-          ].map((s) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center"
-            >
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent tabular-nums mb-2">
-                <AnimatedCounter value={s.n} suffix={s.suffix} />
-              </div>
-              <div className="text-white font-medium text-sm mb-2">{s.label}</div>
-              <p className="text-xs text-slate-500 leading-snug">{s.note}</p>
-            </motion.div>
-          ))}
+        <div className="relative mb-16 md:mb-20">
+          <div
+            className="absolute -inset-px rounded-[28px] bg-gradient-to-br from-indigo-500/35 via-fuchsia-500/15 to-transparent opacity-90 blur-sm pointer-events-none"
+            aria-hidden
+          />
+          <div className="relative rounded-[26px] border border-white/10 bg-gradient-to-b from-[#0c1220] via-[#080d18] to-[#030712] p-6 sm:p-10 md:p-12 shadow-[0_0_80px_-20px_rgba(99,102,241,0.35)] overflow-hidden">
+            <div
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-[min(90%,520px)] h-32 bg-indigo-500/20 blur-[60px] rounded-full pointer-events-none"
+              aria-hidden
+            />
+            <p className="text-center text-xs font-semibold tracking-[0.2em] uppercase text-indigo-200/85 mb-10 md:mb-12">
+              Numbers owners ask about first
+            </p>
+            <div className="grid sm:grid-cols-3 gap-10 sm:gap-6 md:gap-8">
+              {[
+                {
+                  n: 40,
+                  suffix: "%",
+                  hook: "More qualified leads",
+                  label: "Typical lift in serious inquiries",
+                  note: "After launch + local SEO tune-up — fewer tire-kickers, more real opportunities.",
+                  icon: (
+                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path
+                        d="M3 17l6-6 4 4 8-8"
+                        stroke="url(#g1)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path d="M14 8h6v6" stroke="url(#g1)" strokeWidth="2" strokeLinecap="round" />
+                      <defs>
+                        <linearGradient id="g1" x1="3" y1="17" x2="21" y2="5" gradientUnits="userSpaceOnUse">
+                          <stop stopColor="#a5b4fc" />
+                          <stop offset="1" stopColor="#c4b5fd" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  ),
+                },
+                {
+                  n: 2,
+                  suffix: "×",
+                  hook: "Higher inquiry volume",
+                  label: "Versus old or DIY sites",
+                  note: "Clear offers + easy contact paths turn browsers into calls and form fills.",
+                  icon: (
+                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path
+                        d="M22 12h-4l-3 9L9 3l-3 9H2"
+                        stroke="url(#g2)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <defs>
+                        <linearGradient id="g2" x1="2" y1="12" x2="22" y2="12" gradientUnits="userSpaceOnUse">
+                          <stop stopColor="#fbbf24" />
+                          <stop offset="1" stopColor="#f472b6" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  ),
+                },
+                {
+                  n: 90,
+                  suffix: "%",
+                  hook: "Mobile traffic covered",
+                  label: "Built for phones first",
+                  note: "Most local searches happen on mobile — fast, readable, thumb-friendly CTAs.",
+                  icon: (
+                    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <rect
+                        x="5"
+                        y="2"
+                        width="14"
+                        height="20"
+                        rx="2"
+                        stroke="url(#g3)"
+                        strokeWidth="2"
+                      />
+                      <path d="M12 18h.01" stroke="url(#g3)" strokeWidth="2" strokeLinecap="round" />
+                      <defs>
+                        <linearGradient id="g3" x1="5" y1="2" x2="19" y2="22" gradientUnits="userSpaceOnUse">
+                          <stop stopColor="#34d399" />
+                          <stop offset="1" stopColor="#22d3ee" />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  ),
+                },
+              ].map((s, idx) => (
+                <motion.div
+                  key={s.hook}
+                  initial={{ opacity: 0, y: 28, scale: 0.98 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ delay: idx * 0.12, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                  className="relative text-center sm:text-left flex flex-col items-center sm:items-stretch"
+                >
+                  <div className="flex justify-center sm:justify-start mb-4 opacity-90">{s.icon}</div>
+                  <div
+                    className="text-[clamp(3.25rem,8vw,4.75rem)] leading-none font-bold tabular-nums tracking-tight mb-3"
+                    style={{ fontFamily: "var(--font-display), Georgia, serif" }}
+                  >
+                    <span className="bg-gradient-to-b from-white via-white to-indigo-200/90 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(129,140,248,0.35)]">
+                      <AnimatedCounter value={s.n} suffix={s.suffix} />
+                    </span>
+                  </div>
+                  <p className="text-lg md:text-xl font-semibold text-white mb-1">{s.hook}</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-indigo-300/80 mb-4">{s.label}</p>
+                  <p className="text-sm text-slate-400 leading-relaxed max-w-[280px] sm:max-w-none mx-auto sm:mx-0">
+                    {s.note}
+                  </p>
+                  {idx < 2 && (
+                    <div
+                      className="hidden sm:block absolute top-8 -right-3 md:-right-4 w-px h-[calc(100%-2rem)] bg-gradient-to-b from-transparent via-white/15 to-transparent"
+                      aria-hidden
+                    />
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
@@ -493,7 +568,7 @@ export default function LandingHome() {
       </section>
 
       {/* Portfolio */}
-      <section id="portfolio" className="relative z-10 py-24 px-5 max-w-6xl mx-auto scroll-mt-24">
+      <section id="portfolio" className="relative z-10 py-24 px-5 max-w-7xl mx-auto scroll-mt-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -513,33 +588,7 @@ export default function LandingHome() {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {PORTFOLIO.map((item, i) => (
-            <motion.article
-              key={item.title}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.06 }}
-              whileHover={{ y: -4 }}
-              className="group rounded-2xl border border-white/10 overflow-hidden bg-white/[0.02] flex flex-col"
-            >
-              <div
-                className={`h-36 bg-gradient-to-br ${item.gradient} relative`}
-                aria-hidden
-              >
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(3,7,18,0.85))]" />
-                <span className="absolute bottom-3 left-4 text-xs font-medium text-white/90 uppercase tracking-wider">
-                  {item.niche}
-                </span>
-              </div>
-              <div className="p-6 flex-1 flex flex-col">
-                <h3 className="text-lg font-semibold text-white mb-2">{item.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed flex-1">{item.blurb}</p>
-              </div>
-            </motion.article>
-          ))}
-        </div>
+        <LandingPortfolioShowcase />
       </section>
 
       {/* SEO */}
@@ -665,7 +714,7 @@ export default function LandingHome() {
         </div>
       </section>
 
-      <section className="relative z-10 py-24 px-5">
+      <section id="contact" className="relative z-10 py-24 px-5 scroll-mt-24">
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -681,30 +730,20 @@ export default function LandingHome() {
               Let&apos;s talk about your business
             </h2>
             <p className="text-slate-400 mb-8 max-w-md mx-auto">
-              Create an account to get started, or sign in if we already work together. I work primarily with small and
-              local businesses who want a site that performs — and a partner who picks up the phone.
+              Tell me a bit about your company and how to reach you. I work primarily with small and local businesses
+              who want a site that performs — and a partner who picks up the phone.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                href="/register"
-                className="inline-flex justify-center rounded-xl px-8 py-3.5 text-sm font-semibold bg-white text-slate-900 hover:bg-white/90 transition-colors"
-              >
-                Create account
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex justify-center rounded-xl px-8 py-3.5 text-sm font-medium border border-white/20 text-white hover:bg-white/5 transition-colors"
-              >
-                Sign in
-              </Link>
-            </div>
+            <LandingContactForm />
           </div>
         </motion.div>
       </section>
 
       <footer className="relative z-10 border-t border-white/5 py-12 px-5 text-center text-sm text-slate-500">
         <p className="text-white/70 font-medium mb-1">Website by Jay</p>
-        <p>© {new Date().getFullYear()} Jay · Web design &amp; builds for small businesses</p>
+        <p className="max-w-lg mx-auto leading-relaxed">
+          © {new Date().getFullYear()} Jay · Web design &amp; SEO for the North Shore of Massachusetts &amp; Greater
+          Boston — Lynn, Salem, Peabody, Revere, Chelsea, Everett, Saugus, Boston &amp; nearby.
+        </p>
       </footer>
     </div>
   );

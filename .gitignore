@@ -17,6 +17,7 @@ dist/
 
 # project data (generated sites)
 .projects/
+.data/
 
 # misc
 .DS_Store

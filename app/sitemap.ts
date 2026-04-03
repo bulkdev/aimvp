@@ -21,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${appUrl}${base}`,
       lastModified: new Date(project.updatedAt),
       changeFrequency: "weekly",
-      priority: 0.9,
+      priority: 0.55,
     });
 
     for (const service of project.content.services.slice(0, 12)) {
@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         url: `${appUrl}${buildServiceUrl(project, s)}`,
         lastModified: new Date(project.updatedAt),
         changeFrequency: "weekly",
-        priority: 0.8,
+        priority: 0.45,
       });
     }
 
@@ -42,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         url: `${appUrl}${buildAreaUrl(project, a)}`,
         lastModified: new Date(project.updatedAt),
         changeFrequency: "weekly",
-        priority: 0.75,
+        priority: 0.4,
       });
     }
   }

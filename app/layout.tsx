@@ -21,9 +21,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  /** No `template` — client sites must use full `title.absolute` so their titles are never suffixed with the studio name (keeps brand search results on the homepage). */
   title: {
     default: "Website by Jay",
-    template: "%s | Website by Jay",
   },
   description:
     "Professional websites for small businesses — SEO-ready builds, fast performance, and personal support from Jay.",
