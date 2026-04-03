@@ -7,6 +7,8 @@ node_modules/
 .next/
 out/
 dist/
+next-build-artifacts/
+next-build-artifacts-prod/
 
 # env
 .env

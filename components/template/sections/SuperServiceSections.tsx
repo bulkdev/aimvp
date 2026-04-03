@@ -3,6 +3,7 @@
 import { type FormEvent, useEffect, useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData, ServiceItem } from "@/types";
 import { applyIntakeLocationToCopy, intakeLocationLine } from "@/lib/location";
+import { publishedNavHref, type NavHash } from "@/lib/published-nav-hrefs";
 
 /** Stock imagery — Unsplash License */
 const HERO_SLIDES: { src: string; alt: string }[] = [
@@ -55,15 +56,24 @@ function MenuIcon({ open }: { open: boolean }) {
   );
 }
 
-const NAV_LINKS: { label: string; href: string }[] = [
-  { label: "Services", href: "#services" },
-  { label: "About", href: "#about" },
-  { label: "Reviews", href: "#reviews" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Contact", href: "#contact" },
+const NAV_LINKS: { label: string; hash: NavHash }[] = [
+  { label: "Services", hash: "services" },
+  { label: "Stats", hash: "stats" },
+  { label: "About", hash: "about" },
+  { label: "Reviews", hash: "reviews" },
+  { label: "FAQ", hash: "faq" },
+  { label: "Contact", hash: "contact" },
 ];
 
-export function SuperServiceNavbar({ content, intake }: { content: GeneratedSiteContent; intake: IntakeFormData }) {
+export function SuperServiceNavbar({
+  content,
+  intake,
+  publishedBasePath,
+}: {
+  content: GeneratedSiteContent;
+  intake: IntakeFormData;
+  publishedBasePath?: string;
+}) {
   const [open, setOpen] = useState(false);
   const phone = intake.phone?.trim();
   const tel = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : "";
@@ -81,7 +91,7 @@ export function SuperServiceNavbar({ content, intake }: { content: GeneratedSite
       style={{ background: "#ffffff", borderColor: "rgba(12,30,61,0.08)" }}
     >
       <div className="max-w-screen-2xl mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-4 h-[72px] md:h-[80px]">
-        <a href="#hero" className="flex items-center gap-3 min-w-0" onClick={() => setOpen(false)}>
+        <a href={publishedNavHref(publishedBasePath, "hero")} className="flex items-center gap-3 min-w-0" onClick={() => setOpen(false)}>
           {intake.logoDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={intake.logoDataUrl} alt="" className="h-9 md:h-11 w-auto object-contain shrink-0" />
@@ -104,8 +114,8 @@ export function SuperServiceNavbar({ content, intake }: { content: GeneratedSite
         <nav className="hidden lg:flex items-center gap-8">
           {NAV_LINKS.map((l) => (
             <a
-              key={l.href}
-              href={l.href}
+              key={l.hash}
+              href={publishedNavHref(publishedBasePath, l.hash)}
               className="text-[15px] font-semibold hover:opacity-80 transition-opacity"
               style={{ color: "var(--primary)" }}
             >
@@ -121,7 +131,7 @@ export function SuperServiceNavbar({ content, intake }: { content: GeneratedSite
             </a>
           )}
           <a
-            href="#contact"
+            href={publishedNavHref(publishedBasePath, "contact")}
             className="inline-flex items-center justify-center px-5 py-2.5 rounded text-sm font-bold text-white whitespace-nowrap"
             style={{ background: "var(--accent)" }}
           >
@@ -143,8 +153,8 @@ export function SuperServiceNavbar({ content, intake }: { content: GeneratedSite
         <div className="lg:hidden border-t border-slate-100 bg-white px-4 py-4 flex flex-col gap-1">
           {NAV_LINKS.map((l) => (
             <a
-              key={l.href}
-              href={l.href}
+              key={l.hash}
+              href={publishedNavHref(publishedBasePath, l.hash)}
               className="py-3 font-semibold border-b border-slate-100"
               style={{ color: "var(--primary)" }}
               onClick={() => setOpen(false)}
@@ -158,7 +168,7 @@ export function SuperServiceNavbar({ content, intake }: { content: GeneratedSite
             </a>
           )}
           <a
-            href="#contact"
+            href={publishedNavHref(publishedBasePath, "contact")}
             className="mt-2 text-center py-3 rounded font-bold text-white"
             style={{ background: "var(--accent)" }}
             onClick={() => setOpen(false)}
@@ -400,9 +410,9 @@ export function SuperServiceWhySection({
 
 // ─── Membership / care club block ─────────────────────────────────────────────
 
-export function SuperServiceMembership() {
+export function SuperServiceMembership({ contactHref = "#contact" }: { contactHref?: string }) {
   return (
-    <section style={{ background: "#eef2f7", padding: "72px 0" }}>
+    <section id="cta" style={{ background: "#eef2f7", padding: "72px 0" }}>
       <div className="max-w-screen-lg mx-auto px-4 text-center">
         <h2 className="text-2xl md:text-3xl font-bold mb-3" style={{ fontFamily: "var(--h-font)", color: "var(--primary)" }}>
           The loyalty plan
@@ -421,7 +431,7 @@ export function SuperServiceMembership() {
           </p>
           <p className="text-slate-600 text-sm mb-8">Plans vary by equipment — we&apos;ll recommend the right fit.</p>
           <a
-            href="#contact"
+            href={contactHref}
             className="inline-block w-full py-3 rounded-lg font-bold text-white"
             style={{ background: "var(--accent)" }}
           >

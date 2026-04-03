@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProjectByPublicSlug } from "@/lib/store";
-import { absoluteUrl, isReservedPublicSlug, publicPagesEnabled, slugify } from "@/lib/seo";
+import { absoluteUrl, buildPublishedBasePath, isReservedPublicSlug, publicPagesEnabled, slugify } from "@/lib/seo";
 import { intakeLocationLine } from "@/lib/location";
 import { siteFaviconIcons } from "@/lib/favicon-metadata";
 
@@ -40,7 +40,7 @@ export default async function SlugServiceLandingPage({ params }: Props) {
           </p>
         </div>
       </section>
-      <SiteTemplate project={project} />
+      <SiteTemplate project={project} publishedBasePath={buildPublishedBasePath(project)} />
     </>
   );
 }

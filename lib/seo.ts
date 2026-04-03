@@ -1,5 +1,6 @@
 import type { IntakeFormData, Project } from "@/types";
 import { intakeAddressParts } from "@/lib/location";
+import type { SubpagePathSegment } from "@/lib/published-subpages";
 
 export function slugify(value: string): string {
   return value
@@ -27,6 +28,17 @@ export const RESERVED_PUBLIC_URL_SLUGS = new Set([
   "icon",
   "_next",
   "static",
+  /** SEO subpage path segments — must not collide with customer `publicSlug`. */
+  "about",
+  "contact",
+  "services",
+  "work",
+  "faq",
+  "reviews",
+  "booking",
+  "payment",
+  "cta",
+  "areas",
 ]);
 
 export function normalizePublicSlug(input: string): string {
@@ -69,6 +81,10 @@ export function buildServiceUrl(project: Pick<Project, "id" | "publicSlug">, ser
 
 export function buildAreaUrl(project: Pick<Project, "id" | "publicSlug">, areaName: string): string {
   return `${buildPublishedBasePath(project)}/areas/${slugify(areaName)}`;
+}
+
+export function buildSubpageUrl(project: Pick<Project, "id" | "publicSlug">, segment: SubpagePathSegment): string {
+  return `${buildPublishedBasePath(project)}/${segment}`;
 }
 
 export function absoluteUrl(pathname: string): string {

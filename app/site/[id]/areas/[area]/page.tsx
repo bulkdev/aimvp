@@ -44,7 +44,7 @@ export default async function AreaLandingPage({ params }: Props) {
           </p>
         </div>
       </section>
-      <SiteTemplate project={project} />
+      <SiteTemplate project={project} publishedBasePath={buildPublishedBasePath(project)} />
     </>
   );
 }

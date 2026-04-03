@@ -64,6 +64,15 @@ export const DEFAULT_THEMES: Record<string, SiteTheme> = {
     fontBody: "'DM Sans', system-ui, sans-serif",
     style: "bold",
   },
+  /** Renovation / design-build: charcoal, warm brass accent, editorial serif */
+  renovations: {
+    primaryColor: "#0c0a09",
+    secondaryColor: "#1c1917",
+    accentColor: "#c9a227",
+    fontHeading: "'Fraunces', 'Playfair Display', Georgia, serif",
+    fontBody: "'DM Sans', system-ui, sans-serif",
+    style: "modern",
+  },
 };
 
 /**
@@ -76,6 +85,9 @@ export function pickThemeFromIntake(intake: IntakeFormData): SiteTheme {
   }
   if (v === "plumbing") {
     return DEFAULT_THEMES.plumbing;
+  }
+  if (v === "renovations") {
+    return DEFAULT_THEMES.renovations;
   }
   return pickTheme(intake.businessDescription);
 }

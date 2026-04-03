@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { listProjects } from "@/lib/store";
-import { appBaseUrl, buildAreaUrl, buildPublishedBasePath, buildServiceUrl, publicPagesEnabled, slugify } from "@/lib/seo";
+import { appBaseUrl, buildAreaUrl, buildPublishedBasePath, buildServiceUrl, buildSubpageUrl, publicPagesEnabled, slugify } from "@/lib/seo";
+import { SUBPAGE_PATH_SEGMENTS } from "@/lib/published-subpages";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appUrl = appBaseUrl();
@@ -23,6 +24,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.55,
     });
+
+    for (const seg of SUBPAGE_PATH_SEGMENTS) {
+      if (seg === "booking" && !project.intake.bookingEnabled) continue;
+      if (seg === "payment" && !project.intake.paymentEnabled) continue;
+      items.push({
+        url: `${appUrl}${buildSubpageUrl(project, seg)}`,
+        lastModified: new Date(project.updatedAt),
+        changeFrequency: "weekly",
+        priority: 0.48,
+      });
+    }
 
     for (const service of project.content.services.slice(0, 12)) {
       const s = slugify(service.title);

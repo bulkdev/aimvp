@@ -1,5 +1,5 @@
 import React from "react";
-import type { Project } from "@/types";
+import type { GeneratedSiteContent, Project } from "@/types";
 import { buildThemeCssVars } from "@/lib/utils";
 import { resolveSiteVariant } from "@/lib/siteVariant";
 import { normalizeNap } from "@/lib/seo";
@@ -18,6 +18,8 @@ import PaymentSection from "./sections/PaymentSection";
 import FooterSection from "./sections/FooterSection";
 import CtaBanner from "./sections/CtaBanner";
 import GoogleReviewsSection from "./sections/GoogleReviewsSection";
+import StatsSection from "./sections/StatsSection";
+import SubpageParallaxBackdrop from "./SubpageParallaxBackdrop";
 import {
   SuperServiceTopBar,
   SuperServiceNavbar,
@@ -29,13 +31,32 @@ import {
 } from "./sections/SuperServiceSections";
 import SeoAnalytics from "@/components/seo/SeoAnalytics";
 import ScrollReveal from "./ScrollReveal";
+import RenovationsNavbar from "./renovations/RenovationsNavbar";
+import RenovationsHero from "./renovations/RenovationsHero";
+import RenovationsServicesShowcase from "./renovations/RenovationsServicesShowcase";
+import RenovationsInstagramFeed from "./renovations/RenovationsInstagramFeed";
+import RenovationsParallaxBand from "./renovations/RenovationsParallaxBand";
+import type { PublishedSubpageSection, SiteSectionKey } from "@/lib/published-subpages";
+import { publishedNavHref } from "@/lib/published-nav-hrefs";
+import {
+  normalizeParallaxOverlayOpacity,
+  overlayOpacityForSection,
+  parallaxLayerAllowedForKey,
+  sectionParallaxImageForContext,
+} from "@/lib/parallaxSettings";
 
 interface Props {
   project: Project;
+  /** Published SEO: render only this section (navbar + footer still shown). */
+  subpage?: PublishedSubpageSection;
+  /** Set on live published routes so nav/footer use `/slug/...` instead of `#` anchors. */
+  publishedBasePath?: string;
 }
 
-export default function SiteTemplate({ project }: Props) {
+export default function SiteTemplate({ project, subpage, publishedBasePath }: Props) {
   const { content, intake } = project;
+  const isSubpage = Boolean(subpage);
+  const heroParallaxOverlayPct = normalizeParallaxOverlayOpacity(content.assets?.parallaxOverlayOpacity);
   const cssVars = buildThemeCssVars(content.theme);
   const design = content.assets?.designVariants;
   const variant = resolveSiteVariant(
@@ -95,10 +116,10 @@ export default function SiteTemplate({ project }: Props) {
           ourWork:
             design?.ourWork ??
             (plumbingPreset === "split"
-              ? "minimal-grid"
+              ? "grid-3"
               : plumbingPreset === "boxed"
-                ? "split-feature"
-                : "cards"),
+                ? "masonry"
+                : "masonry"),
         }
       : design;
   const nap = normalizeNap(intake);
@@ -202,32 +223,33 @@ export default function SiteTemplate({ project }: Props) {
     name: content.brandName,
     url: canonicalUrl,
   };
-  type SectionKey =
-    | "hero"
-    | "services"
-    | "portfolio"
-    | "about"
-    | "booking"
-    | "faq"
-    | "reviews"
-    | "cta"
-    | "payment"
-    | "contact";
-  const defaultOrderFromLayout: SectionKey[] =
+  const defaultOrderFromLayout: SiteSectionKey[] =
     layoutVariant === "about-first"
-      ? ["hero", "about", "services", "portfolio", "booking", "faq", "reviews", "cta", "payment", "contact"]
+      ? ["hero", "about", "services", "stats", "portfolio", "booking", "faq", "reviews", "cta", "payment", "contact"]
       : layoutVariant === "services-first"
-        ? ["hero", "services", "portfolio", "about", "booking", "faq", "reviews", "cta", "payment", "contact"]
-        : ["hero", "services", "portfolio", "about", "booking", "faq", "reviews", "cta", "payment", "contact"];
-  const rawOrder = (content.assets?.sectionOrder as SectionKey[] | undefined) ?? defaultOrderFromLayout;
-  const allowedSet = new Set<SectionKey>(["hero", "services", "portfolio", "about", "booking", "faq", "reviews", "cta", "payment", "contact"]);
-  const normalizedOrder: SectionKey[] = [
-    ...rawOrder.filter((k) => allowedSet.has(k)),
-    ...defaultOrderFromLayout.filter((k) => !rawOrder.includes(k)),
-  ];
-  const sectionMap: Record<SectionKey, React.ReactNode> = {
+        ? ["hero", "services", "stats", "portfolio", "about", "booking", "faq", "reviews", "cta", "payment", "contact"]
+        : ["hero", "services", "stats", "portfolio", "about", "booking", "faq", "reviews", "cta", "payment", "contact"];
+  const rawOrder = content.assets?.sectionOrder as SiteSectionKey[] | undefined;
+  const allowedSet = new Set<SiteSectionKey>([
+    "hero",
+    "services",
+    "stats",
+    "portfolio",
+    "about",
+    "booking",
+    "faq",
+    "reviews",
+    "cta",
+    "payment",
+    "contact",
+  ]);
+  const normalizedOrder: SiteSectionKey[] =
+    rawOrder && rawOrder.length > 0 ? rawOrder.filter((k) => allowedSet.has(k)) : defaultOrderFromLayout;
+  const sectionMap: Record<SiteSectionKey, React.ReactNode> = {
     hero:
-      variant === "superService" ? (
+      variant === "renovations" ? (
+        <RenovationsHero content={content} intake={intake} parallaxOverlayOpacity={heroParallaxOverlayPct} />
+      ) : variant === "superService" ? (
         <SuperServiceHero content={content} intake={intake} />
       ) : variant === "plumbing" && plumbingPreset === "flow" ? (
         <PlumbingFlowHeroSection
@@ -245,8 +267,24 @@ export default function SiteTemplate({ project }: Props) {
       ) : (
         <HeroSection content={content} intake={intake} />
       ),
+    stats: (
+      <StatsSection
+        content={content}
+        siteVariant={variant}
+        parallaxImageUrl={sectionParallaxImageForContext(content.assets, "stats", isSubpage)}
+        parallaxOverlayOpacity={overlayOpacityForSection(content.assets, "stats")}
+      />
+    ),
     services:
-      variant === "superService" ? (
+      variant === "renovations" ? (
+        <RenovationsServicesShowcase
+          content={content}
+          intake={intake}
+          parallaxImageUrl={sectionParallaxImageForContext(content.assets, "services", isSubpage)}
+          parallaxLayerActive={parallaxLayerAllowedForKey(content.assets, "services", isSubpage)}
+          parallaxOverlayOpacity={overlayOpacityForSection(content.assets, "services")}
+        />
+      ) : variant === "superService" ? (
         <SuperServiceTradeCards content={content} intake={intake} />
       ) : (
         <ServicesSection
@@ -257,7 +295,27 @@ export default function SiteTemplate({ project }: Props) {
           linkProject={project}
         />
       ),
-    portfolio: <PortfolioSection content={content} styleVariant={effectiveDesign?.ourWork ?? "cards"} />,
+    portfolio:
+      variant === "renovations" ? (
+        <div>
+          <RenovationsInstagramFeed
+            content={content}
+            layoutMode={effectiveDesign?.ourWork}
+            publishedBasePath={publishedBasePath}
+            standalonePortfolioPage={subpage === "portfolio"}
+          />
+          <RenovationsParallaxBand
+            parallaxOverlayOpacity={overlayOpacityForSection(content.assets, "portfolio")}
+          />
+        </div>
+      ) : (
+        <PortfolioSection
+          content={content}
+          styleVariant={effectiveDesign?.ourWork ?? "masonry"}
+          publishedBasePath={publishedBasePath}
+          standalonePortfolioPage={subpage === "portfolio"}
+        />
+      ),
     about:
       variant === "superService" ? (
         <SuperServiceWhySection content={content} intake={intake} />
@@ -269,13 +327,20 @@ export default function SiteTemplate({ project }: Props) {
     reviews: <GoogleReviewsSection content={content} />,
     cta:
       variant === "superService" ? (
-        <SuperServiceMembership />
+        <SuperServiceMembership contactHref={publishedNavHref(publishedBasePath, "contact")} />
       ) : (
-        <CtaBanner content={content} intake={intake} />
+        <CtaBanner content={content} intake={intake} contactHref={publishedNavHref(publishedBasePath, "contact")} />
       ),
     payment: intake.paymentEnabled ? <PaymentSection content={content} /> : null,
     contact: <ContactSection content={content} intake={intake} projectId={project.id} />,
   };
+  const effectiveOrder: SiteSectionKey[] = subpage ? [subpage] : normalizedOrder;
+  /** SEO subpages: append Our Story + contact after the main section (skip duplicates). */
+  const standaloneAboutTrail = Boolean(subpage && subpage !== "about");
+  const standaloneContactTrail = Boolean(subpage && subpage !== "contact");
+  const subpageTrailCount =
+    (standaloneAboutTrail ? 1 : 0) + (standaloneContactTrail ? 1 : 0);
+  const chatHref = publishedNavHref(publishedBasePath, "contact");
   return (
     <div
       style={{ ...(cssVars as React.CSSProperties), position: "relative" }}
@@ -354,6 +419,25 @@ export default function SiteTemplate({ project }: Props) {
           margin: 16px 0 24px;
         }
 
+        /* Admin theme on dark / editorial blocks (replaces hardcoded amber/yellow) */
+        .preview-root .theme-accent-muted {
+          color: color-mix(in srgb, var(--accent) 72%, white);
+        }
+        .preview-root .theme-accent-icon {
+          color: var(--accent);
+          opacity: 0.95;
+        }
+        .preview-root .theme-accent-border-hover:hover {
+          border-color: color-mix(in srgb, var(--accent) 40%, rgba(255, 255, 255, 0.12)) !important;
+        }
+        .preview-root .theme-accent-gradient-badge {
+          background: linear-gradient(
+            135deg,
+            var(--accent),
+            color-mix(in srgb, var(--accent) 50%, var(--secondary))
+          );
+        }
+
         .chat-fab {
           position: fixed;
           right: 16px;
@@ -382,40 +466,82 @@ export default function SiteTemplate({ project }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <>
-        {variant === "superService" ? (
+        {variant === "renovations" ? (
+          <RenovationsNavbar content={content} intake={intake} publishedBasePath={publishedBasePath} />
+        ) : variant === "superService" ? (
           <>
             <SuperServiceTopBar />
-            <SuperServiceNavbar content={content} intake={intake} />
+            <SuperServiceNavbar content={content} intake={intake} publishedBasePath={publishedBasePath} />
           </>
         ) : variant === "plumbing" && plumbingPreset === "flow" ? (
-          <PlumbingFlowNavbar content={content} intake={intake} />
+          <PlumbingFlowNavbar content={content} intake={intake} publishedBasePath={publishedBasePath} />
         ) : (
           <NavbarSection
             content={content}
             intake={intake}
             isPlumbing={variant === "plumbing"}
             styleVariant={effectiveDesign?.navbar ?? "standard"}
+            publishedBasePath={publishedBasePath}
           />
         )}
-        {normalizedOrder.map((key, i) => {
+        {effectiveOrder.map((key, i) => {
           const node = sectionMap[key];
           if (node == null) return null;
+          const inner =
+            subpage && key !== "hero" ? (
+              parallaxLayerAllowedForKey(content.assets, key, true) ? (
+                <SubpageParallaxBackdrop
+                  imageUrl={sectionParallaxImageForContext(content.assets, key, true)}
+                  overlayOpacity={overlayOpacityForSection(content.assets, key)}
+                >
+                  {node}
+                </SubpageParallaxBackdrop>
+              ) : (
+                node
+              )
+            ) : (
+              node
+            );
           return (
             <ScrollReveal key={key} delayMs={i * 65} variant={key === "hero" ? "hero" : "default"}>
-              {node}
+              {inner}
             </ScrollReveal>
           );
         })}
-        {variant === "superService" && (
+        {standaloneAboutTrail ? (
+          <ScrollReveal delayMs={effectiveOrder.length * 65} variant="default">
+            {variant === "superService" ? (
+              <SuperServiceWhySection content={content} intake={intake} />
+            ) : (
+              <AboutSection content={content} intake={intake} />
+            )}
+          </ScrollReveal>
+        ) : null}
+        {standaloneContactTrail ? (
+          <ScrollReveal
+            delayMs={(effectiveOrder.length + (standaloneAboutTrail ? 1 : 0)) * 65}
+            variant="default"
+          >
+            <ContactSection content={content} intake={intake} projectId={project.id} />
+          </ScrollReveal>
+        ) : null}
+        {variant === "superService" && !subpage && (
           <ScrollReveal delayMs={normalizedOrder.length * 65}>
             <SuperServiceAreasGrid content={content} />
           </ScrollReveal>
         )}
-        <ScrollReveal delayMs={(normalizedOrder.length + (variant === "superService" ? 1 : 0)) * 65}>
-          <FooterSection content={content} intake={intake} />
+        <ScrollReveal
+          delayMs={
+            (effectiveOrder.length +
+              (variant === "superService" && !subpage ? 1 : 0) +
+              subpageTrailCount) *
+            65
+          }
+        >
+          <FooterSection content={content} intake={intake} publishedBasePath={publishedBasePath} />
         </ScrollReveal>
       </>
-      <a href="#contact" className="chat-fab" aria-label="Open chat/contact">
+      <a href={chatHref} className="chat-fab" aria-label="Open chat/contact">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="M7 9.5h10M7 13h6m-7 7l-3 1.5L4.5 18H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7Z"

@@ -13,6 +13,22 @@ import { Redis } from "@upstash/redis";
 import type { Project, IntakeFormData, GeneratedSiteContent } from "@/types";
 import { isValidCustomerPublicSlug, normalizePublicSlug } from "@/lib/seo";
 
+function isValidProjectBackup(p: unknown): p is Project {
+  if (!p || typeof p !== "object") return false;
+  const o = p as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    o.id.length > 0 &&
+    typeof o.intake === "object" &&
+    o.intake !== null &&
+    typeof o.content === "object" &&
+    o.content !== null &&
+    (o.status === "draft" || o.status === "published") &&
+    typeof o.createdAt === "string" &&
+    typeof o.updatedAt === "string"
+  );
+}
+
 const INDEX_KEY = "project:index";
 
 const STORE_DIR = path.join(process.cwd(), ".projects");
@@ -258,6 +274,64 @@ export async function createProject(
 const DUPLICATE_SUFFIX = " (copy)";
 
 /** Deep-clone a site as a new project (new id, draft, no public slug). Preserves owner when present. */
+/**
+ * Restore a site from a JSON backup (same shape as `.projects/{id}.json` or API export).
+ * Assigns `ownerId` to the given user. Creates a new index entry if the id is new; otherwise replaces.
+ */
+export async function importProject(project: Project, options: { ownerId: string }): Promise<Project> {
+  requireWritableStorage();
+  if (!isValidProjectBackup(project)) {
+    throw new Error("Invalid backup: expected id, intake, content, status, and timestamps.");
+  }
+
+  let next: Project = {
+    ...project,
+    ownerId: options.ownerId,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (next.publicSlug?.trim()) {
+    const n = normalizePublicSlug(next.publicSlug);
+    if (!isValidCustomerPublicSlug(n)) {
+      throw new Error("Invalid or reserved public URL slug in this backup file.");
+    }
+    next = { ...next, publicSlug: n };
+  }
+
+  const newN = next.publicSlug?.trim().toLowerCase();
+  if (newN) {
+    const owner = await getOwnerIdForSlug(newN);
+    if (owner && owner !== next.id) {
+      throw new Error("That URL slug is already in use by another site.");
+    }
+  }
+
+  const existing = await getProject(next.id);
+  const redis = getRedis();
+
+  const beforeForSync: Project = existing ?? { ...next, publicSlug: undefined };
+  await syncSlugIndex(beforeForSync, next);
+
+  if (redis) {
+    await redisSetProject(next);
+    if (!existing) {
+      await redis.lpush(INDEX_KEY, next.id);
+    }
+  } else {
+    ensureStoreFs();
+    fs.writeFileSync(projectPath(next.id), JSON.stringify(next, null, 2));
+    if (!existing) {
+      const index = readIndexFs();
+      if (!index.includes(next.id)) {
+        index.unshift(next.id);
+        writeIndexFs(index);
+      }
+    }
+  }
+
+  return next;
+}
+
 export async function duplicateProject(sourceId: string): Promise<Project | null> {
   const source = await getProject(sourceId);
   if (!source) return null;

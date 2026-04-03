@@ -21,7 +21,7 @@ export default async function PublishedSitePage({ params }: Props) {
   if (project.publicSlug?.trim()) {
     redirect(buildPublishedBasePath(project));
   }
-  return <SiteTemplate project={project} />;
+  return <SiteTemplate project={project} publishedBasePath={buildPublishedBasePath(project)} />;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

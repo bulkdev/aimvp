@@ -1,11 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { GeneratedSiteContent } from "@/types";
+import { normalizePortfolioLayout, type PortfolioLayoutMode } from "@/lib/portfolioLayout";
+import { clampPortfolioHomePreviewCount } from "@/lib/portfolioPreview";
+import { publishedNavHref } from "@/lib/published-nav-hrefs";
+import PortfolioLightbox from "./PortfolioLightbox";
 
 interface Props {
   content: GeneratedSiteContent;
-  styleVariant?: "cards" | "minimal-grid" | "split-feature";
+  /** Saved as `designVariants.ourWork` — legacy values are normalized. */
+  styleVariant?: string;
+  /** Published site base path for `/work` link; preview uses `#work`. */
+  publishedBasePath?: string;
+  /** `/slug/work` standalone page: show all projects / slides (no home preview cap). */
+  standalonePortfolioPage?: boolean;
 }
 
 const DEFAULT_PROJECT_GALLERIES: string[][] = [
@@ -26,6 +36,16 @@ const DEFAULT_PROJECT_GALLERIES: string[][] = [
   ],
 ];
 
+const MASONRY_HEIGHTS = [260, 340, 290, 380, 270, 360];
+
+type Card = {
+  serviceType: string;
+  review: string;
+  photos: string[];
+  rating: number;
+  projectName: string;
+};
+
 function shortReview(serviceTitle: string): string {
   const lower = serviceTitle.toLowerCase();
   if (lower.includes("emergency")) return "They arrived fast, fixed the issue in one visit, and left everything clean.";
@@ -34,9 +54,115 @@ function shortReview(serviceTitle: string): string {
   return "Excellent workmanship and clear updates throughout the whole job.";
 }
 
-export default function PortfolioSection({ content, styleVariant = "cards" }: Props) {
+function PortfolioCard({
+  item,
+  layout,
+  minHeight,
+  onOpen,
+}: {
+  item: Card;
+  layout: PortfolioLayoutMode;
+  minHeight: number;
+  onOpen: () => void;
+}) {
+  const isGrid = layout === "grid-3";
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      style={{
+        position: "relative",
+        width: "100%",
+        minHeight,
+        borderRadius: "18px",
+        overflow: "hidden",
+        boxShadow: isGrid ? "0 4px 16px rgba(0,0,0,0.12)" : "0 8px 32px rgba(0,0,0,0.18)",
+        border: isGrid ? "1px solid rgba(15,23,42,0.08)" : "1px solid rgba(255,255,255,0.2)",
+        textAlign: "left",
+      }}
+      className="group transition-transform duration-200 hover:-translate-y-1"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={item.photos[0]}
+        alt={`${item.serviceType} project`}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: isGrid
+            ? "linear-gradient(180deg, rgba(11,18,32,0.06) 35%, rgba(11,18,32,0.62) 100%)"
+            : "linear-gradient(180deg, rgba(11,18,32,0.12) 35%, rgba(11,18,32,0.84) 100%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          height: "100%",
+          minHeight,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "20px",
+        }}
+      >
+        <span
+          style={{
+            alignSelf: "flex-start",
+            background: "color-mix(in srgb, var(--accent) 86%, #000 14%)",
+            color: "white",
+            fontSize: "12px",
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            borderRadius: "999px",
+            padding: "7px 12px",
+          }}
+        >
+          {item.serviceType}
+        </span>
+
+        <div
+          style={{
+            background: "rgba(11,18,32,0.65)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            borderRadius: "14px",
+            padding: "14px",
+            backdropFilter: "blur(3px)",
+          }}
+        >
+          <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+            {Array.from({ length: item.rating }).map((_, idx) => (
+              <span key={idx} style={{ color: "var(--accent)", fontSize: "14px", lineHeight: 1 }}>
+                ★
+              </span>
+            ))}
+          </div>
+          <p style={{ margin: 0, color: "rgba(255,255,255,0.92)", fontSize: "0.92rem", lineHeight: 1.6 }}>
+            &ldquo;{item.review}&rdquo;
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+export default function PortfolioSection({
+  content,
+  styleVariant,
+  publishedBasePath,
+  standalonePortfolioPage = false,
+}: Props) {
+  const layout = normalizePortfolioLayout(styleVariant);
   const [activeProjectIdx, setActiveProjectIdx] = useState<number | null>(null);
-  const [activeSlideIdx, setActiveSlideIdx] = useState(0);
+  const [lightboxInitialSlide, setLightboxInitialSlide] = useState(0);
+  const [sliderIdx, setSliderIdx] = useState(0);
+  const previewLimit = clampPortfolioHomePreviewCount(content.assets?.portfolioHomePreviewCount);
+  const workHref = publishedNavHref(publishedBasePath, "work");
 
   const configuredCards = (content.assets?.portfolioEntries ?? []).filter(
     (entry) => entry.photos && entry.photos.length > 0
@@ -47,7 +173,7 @@ export default function PortfolioSection({ content, styleVariant = "cards" }: Pr
       ? content.assets.portfolioProjects
       : DEFAULT_PROJECT_GALLERIES;
 
-  const cards =
+  const cards: Card[] =
     configuredCards.length > 0
       ? configuredCards.map((entry) => ({
           serviceType: entry.serviceType,
@@ -64,23 +190,47 @@ export default function PortfolioSection({ content, styleVariant = "cards" }: Pr
           projectName: `${service.title} project`,
         }));
 
+  const sliderSlides = cards.flatMap((item, pi) =>
+    item.photos.map((src, ph) => ({ src, pi, ph, item }))
+  );
+  const sliderOverflow = !standalonePortfolioPage && sliderSlides.length > previewLimit;
+  const sliderSlidesVisible = sliderOverflow ? sliderSlides.slice(0, previewLimit - 1) : sliderSlides;
+
+  const projectOverflow = !standalonePortfolioPage && cards.length > previewLimit;
+  const visibleCards = projectOverflow ? cards.slice(0, previewLimit - 1) : cards;
+  const teaserProject = projectOverflow ? cards[previewLimit - 1] : null;
+
   const activeProject = activeProjectIdx !== null ? cards[activeProjectIdx] : null;
 
   useEffect(() => {
+    setSliderIdx(0);
+  }, [cards.length, layout]);
+
+  useEffect(() => {
+    if (sliderIdx >= sliderSlidesVisible.length) setSliderIdx(0);
+  }, [sliderIdx, sliderSlidesVisible.length]);
+
+  useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (!activeProject) return;
-      if (e.key === "Escape") {
-        setActiveProjectIdx(null);
-      } else if (e.key === "ArrowRight") {
-        setActiveSlideIdx((v) => (v + 1) % activeProject.photos.length);
-      } else if (e.key === "ArrowLeft") {
-        setActiveSlideIdx((v) => (v - 1 + activeProject.photos.length) % activeProject.photos.length);
+      if (layout === "slider" && sliderSlidesVisible.length > 0 && activeProjectIdx === null) {
+        if (e.key === "ArrowRight") {
+          setSliderIdx((v) => (v + 1) % sliderSlidesVisible.length);
+        } else if (e.key === "ArrowLeft") {
+          setSliderIdx((v) => (v - 1 + sliderSlidesVisible.length) % sliderSlidesVisible.length);
+        }
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeProject]);
+  }, [activeProjectIdx, layout, sliderSlidesVisible.length]);
+
+  function openModal(projectIndex: number, slideIndex: number) {
+    setLightboxInitialSlide(slideIndex);
+    setActiveProjectIdx(projectIndex);
+  }
+
+  const currentSlide = sliderSlidesVisible[sliderIdx];
 
   return (
     <section id="work" style={{ background: "#ffffff", padding: "96px 0" }}>
@@ -102,210 +252,152 @@ export default function PortfolioSection({ content, styleVariant = "cards" }: Pr
           <div className="accent-bar" style={{ margin: "0 auto 0" }} />
         </div>
 
-        <div className={styleVariant === "minimal-grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : styleVariant === "split-feature" ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"}>
-          {cards.map((item, i) => (
-            <button
-              key={`${item.serviceType}-${i}`}
-              type="button"
-              onClick={() => {
-                setActiveProjectIdx(i);
-                setActiveSlideIdx(0);
-              }}
-              style={{
-                position: "relative",
-                minHeight: styleVariant === "minimal-grid" ? "280px" : i === 0 && styleVariant === "split-feature" ? "420px" : "360px",
-                borderRadius: "18px",
-                overflow: "hidden",
-                boxShadow: styleVariant === "minimal-grid" ? "0 4px 16px rgba(0,0,0,0.12)" : "0 8px 32px rgba(0,0,0,0.18)",
-                border: styleVariant === "minimal-grid" ? "1px solid rgba(15,23,42,0.08)" : "1px solid rgba(255,255,255,0.2)",
-                textAlign: "left",
-                gridColumn: i === 0 && styleVariant === "split-feature" ? "span 2 / span 2" : undefined,
-              }}
-              className="group transition-transform duration-200 hover:-translate-y-1"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.photos[0]}
-                alt={`${item.serviceType} project`}
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-              />
+        {layout === "slider" ? (
+          sliderSlidesVisible.length === 0 ? (
+            <p className="text-center text-slate-500">Add portfolio photos in the site editor.</p>
+          ) : (
+            <div className="relative mx-auto max-w-4xl">
               <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    styleVariant === "minimal-grid"
-                      ? "linear-gradient(180deg, rgba(11,18,32,0.06) 35%, rgba(11,18,32,0.62) 100%)"
-                      : "linear-gradient(180deg, rgba(11,18,32,0.12) 35%, rgba(11,18,32,0.84) 100%)",
-                }}
-              />
-
-              <div style={{ position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "20px" }}>
-                <span
-                  style={{
-                    alignSelf: "flex-start",
-                    background: "color-mix(in srgb, var(--accent) 86%, #000 14%)",
-                    color: "white",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    borderRadius: "999px",
-                    padding: "7px 12px",
-                  }}
+                className="relative w-full overflow-hidden rounded-2xl bg-slate-100 shadow-xl"
+                style={{ minHeight: "min(72vh, 560px)" }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={currentSlide.src}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  style={{ minHeight: "min(72vh, 560px)" }}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSliderIdx((v) => (v - 1 + sliderSlidesVisible.length) % sliderSlidesVisible.length)
+                  }
+                  className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-slate-900/55 text-xl text-white backdrop-blur-sm hover:bg-slate-900/75"
+                  aria-label="Previous photo"
                 >
-                  {item.serviceType}
-                </span>
-
-                <div
-                  style={{
-                    background: "rgba(11,18,32,0.65)",
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    borderRadius: "14px",
-                    padding: "14px",
-                    backdropFilter: "blur(3px)",
-                  }}
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSliderIdx((v) => (v + 1) % sliderSlidesVisible.length)}
+                  className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-slate-900/55 text-xl text-white backdrop-blur-sm hover:bg-slate-900/75"
+                  aria-label="Next photo"
                 >
-                  <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
-                    {Array.from({ length: item.rating }).map((_, idx) => (
-                      <span key={idx} style={{ color: "#fbbf24", fontSize: "14px", lineHeight: 1 }}>
-                        ★
-                      </span>
-                    ))}
-                  </div>
-                  <p style={{ margin: 0, color: "rgba(255,255,255,0.92)", fontSize: "0.92rem", lineHeight: 1.6 }}>
-                    &ldquo;{item.review}&rdquo;
-                  </p>
-                </div>
+                  ›
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openModal(currentSlide.pi, currentSlide.ph)}
+                  className="absolute bottom-3 right-3 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-slate-900 shadow-md hover:bg-white"
+                >
+                  Open gallery
+                </button>
               </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {activeProject && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${activeProject.serviceType} project photos`}
-          onClick={() => setActiveProjectIdx(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(2,6,23,0.82)",
-            zIndex: 80,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "min(980px, 100%)",
-              borderRadius: "16px",
-              overflow: "hidden",
-              border: "1px solid rgba(255,255,255,0.16)",
-              background: "#0b1220",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.45)",
-            }}
-          >
-            <div style={{ position: "relative", height: "min(70vh, 560px)" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={activeProject.photos[activeSlideIdx]}
-                alt={`${activeProject.serviceType} project photo ${activeSlideIdx + 1}`}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-
-              <button
-                type="button"
-                onClick={() => setActiveProjectIdx(null)}
-                style={{
-                  position: "absolute",
-                  top: 12,
-                  right: 12,
-                  width: 36,
-                  height: 36,
-                  borderRadius: "999px",
-                  border: "1px solid rgba(255,255,255,0.35)",
-                  background: "rgba(2,6,23,0.62)",
-                  color: "#fff",
-                  fontSize: 20,
-                  lineHeight: 1,
-                }}
-                aria-label="Close slideshow"
-              >
-                ×
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveSlideIdx((v) => (v - 1 + activeProject.photos.length) % activeProject.photos.length)
-                }
-                style={{
-                  position: "absolute",
-                  left: 12,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: 40,
-                  height: 40,
-                  borderRadius: "999px",
-                  border: "1px solid rgba(255,255,255,0.35)",
-                  background: "rgba(2,6,23,0.62)",
-                  color: "#fff",
-                }}
-                aria-label="Previous photo"
-              >
-                ‹
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveSlideIdx((v) => (v + 1) % activeProject.photos.length)}
-                style={{
-                  position: "absolute",
-                  right: 12,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: 40,
-                  height: 40,
-                  borderRadius: "999px",
-                  border: "1px solid rgba(255,255,255,0.35)",
-                  background: "rgba(2,6,23,0.62)",
-                  color: "#fff",
-                }}
-                aria-label="Next photo"
-              >
-                ›
-              </button>
-            </div>
-
-            <div style={{ padding: "14px 16px 16px", background: "#0b1220" }}>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                {activeProject.photos.map((_, idx) => (
+              <p className="mt-4 text-center font-semibold text-slate-800">{currentSlide.item.projectName}</p>
+              <p className="text-center text-sm text-slate-500">
+                {sliderIdx + 1} / {sliderSlidesVisible.length} · {currentSlide.item.serviceType}
+                {sliderOverflow ? (
+                  <span className="text-slate-400"> · {sliderSlides.length} photos total</span>
+                ) : null}
+              </p>
+              {sliderOverflow ? (
+                <p className="mt-2 text-center">
+                  <Link href={workHref} className="text-sm font-semibold text-[var(--accent)] hover:underline">
+                    See full portfolio →
+                  </Link>
+                </p>
+              ) : null}
+              <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+                {sliderSlidesVisible.map((_, i) => (
                   <button
-                    key={idx}
+                    key={i}
                     type="button"
-                    aria-label={`Go to photo ${idx + 1}`}
-                    onClick={() => setActiveSlideIdx(idx)}
+                    aria-label={`Photo ${i + 1}`}
+                    onClick={() => setSliderIdx(i)}
+                    className="h-2 rounded-full transition-all"
                     style={{
-                      width: idx === activeSlideIdx ? 26 : 10,
-                      height: 10,
-                      borderRadius: "999px",
-                      border: "none",
-                      background: idx === activeSlideIdx ? "var(--accent)" : "rgba(255,255,255,0.35)",
+                      width: i === sliderIdx ? 28 : 8,
+                      background: i === sliderIdx ? "var(--accent)" : "rgba(15,23,42,0.25)",
                     }}
                   />
                 ))}
               </div>
             </div>
+          )
+        ) : layout === "grid-3" ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleCards.map((item, i) => (
+              <PortfolioCard
+                key={`${item.serviceType}-${i}`}
+                item={item}
+                layout={layout}
+                minHeight={280}
+                onOpen={() => openModal(i, 0)}
+              />
+            ))}
+            {teaserProject ? (
+              <Link
+                href={workHref}
+                className="group relative block min-h-[280px] overflow-hidden rounded-[18px] border border-slate-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.12)]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={teaserProject.photos[0]}
+                  alt=""
+                  className="absolute inset-0 h-full w-full scale-105 object-cover blur-2xl brightness-90"
+                />
+                <div className="absolute inset-0 bg-slate-900/40" />
+                <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-white drop-shadow">
+                  + See more
+                </span>
+              </Link>
+            ) : null}
           </div>
-        </div>
+        ) : (
+          <div className="columns-1 gap-x-4 sm:columns-2 lg:columns-3">
+            {visibleCards.map((item, i) => (
+              <div key={`${item.serviceType}-${i}`} className="mb-4 break-inside-avoid">
+                <PortfolioCard
+                  item={item}
+                  layout={layout}
+                  minHeight={MASONRY_HEIGHTS[i % MASONRY_HEIGHTS.length]}
+                  onOpen={() => openModal(i, 0)}
+                />
+              </div>
+            ))}
+            {teaserProject ? (
+              <div className="mb-4 break-inside-avoid">
+                <Link
+                  href={workHref}
+                  className="group relative block w-full overflow-hidden rounded-[18px] border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
+                  style={{ minHeight: MASONRY_HEIGHTS[visibleCards.length % MASONRY_HEIGHTS.length] }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={teaserProject.photos[0]}
+                    alt=""
+                    className="absolute inset-0 h-full w-full scale-105 object-cover blur-2xl brightness-90"
+                  />
+                  <div className="absolute inset-0 bg-slate-900/40" />
+                  <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-white drop-shadow">
+                    + See more
+                  </span>
+                </Link>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+
+      {activeProject && (
+        <PortfolioLightbox
+          photos={activeProject.photos}
+          serviceType={activeProject.serviceType}
+          initialSlide={lightboxInitialSlide}
+          onClose={() => setActiveProjectIdx(null)}
+        />
       )}
     </section>
   );
 }
-

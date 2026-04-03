@@ -66,7 +66,7 @@ Generate a professional website content JSON for this local business:
 
 Company Name: ${intake.companyName}
 Business Description: ${intake.businessDescription}
-Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; plumbing-flow = compact slider hero + glass nav; super-service = multi-trade HVAC/plumbing style with service areas)
+Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; plumbing-flow = compact slider hero + glass nav; super-service = multi-trade HVAC/plumbing style with service areas; renovations = parallax / portfolio showcase for remodel & GC)
 Source Link (optional): ${intake.sourceLink || "N/A"}
 ${optionals}
 Booking: ${intake.bookingEnabled ? "Yes" : "No"}
@@ -135,10 +135,26 @@ Trade-specific (plumbing / drains): Write like a local licensed plumber — not 
 - Services: use trade terms (e.g. drain cleaning, repiping, fixture install, water heater) when relevant.
 - Avoid startup jargon ("scale", "platform", "solutions suite").`;
   }
+  if (v === "renovations") {
+    return `
+Trade-specific (home & commercial renovations / general contractor): Premium, confident tone — not generic SaaS.
+- Hero: full-service renovations positioning; mention design clarity, scheduling, permits, and craftsmanship where relevant.
+- services: realistic lanes — e.g. design & planning, residential remodels, commercial build-outs / TI, kitchens & baths, additions, finishing & interiors.
+- about: describe a real process (discovery → scope → build) without fake awards or certifications not in intake.
+- assets: include rich portfolio imagery via portfolioProjects or portfolioEntries when possible.`;
+  }
   return "";
 }
 
 // ─── Mock generator (used when no OpenAI key is configured) ───────────────────
+
+const MOCK_SITE_STATS: { label: string; value: string }[] = [
+  { value: "500+", label: "Projects completed" },
+  { value: "4.9", label: "Avg. star rating" },
+  { value: "A+", label: "BBB rating" },
+  { value: "100%", label: "Licensed & insured" },
+  { value: "15+", label: "Years in business" },
+];
 
 function mockServiceAreas(intake: IntakeFormData, city: string): string[] {
   const st = intake.state?.trim();
@@ -221,6 +237,7 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
         heroSlides: intake.importedHeroSlides,
         portfolioProjects: intake.importedPortfolioProjects,
         serviceAreas: mockServiceAreas(intake, city),
+        siteStats: MOCK_SITE_STATS,
       },
       theme: pickThemeFromIntake(intake),
     };
@@ -254,6 +271,42 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
       assets: {
         heroSlides: intake.importedHeroSlides,
         portfolioProjects: intake.importedPortfolioProjects,
+        siteStats: MOCK_SITE_STATS,
+      },
+      theme: pickThemeFromIntake(intake),
+    };
+  }
+
+  if (variant === "renovations") {
+    const renovationServices = deriveServices(intake, name);
+    return {
+      brandName: name,
+      tagline: `Design-build · ${city}`,
+      hero: {
+        title: `Full-Service Home & Commercial Renovations`,
+        subtitle: `From concept to completion, ${name} coordinates design, permits, and construction — delivering refined spaces and commercial environments across ${city}.`,
+        ctaText: "Start your project",
+        ctaSecondaryText: "View portfolio",
+      },
+      services: renovationServices,
+      about: {
+        heading: "Built around your timeline",
+        body: `We're a full-service renovation partner for homeowners and businesses across ${city}. One team owns planning, trade coordination, and quality control — so you're not juggling disconnected crews.\n\nKitchens, baths, additions, and tenant improvements: we protect occupied spaces, communicate milestones clearly, and build with materials chosen to last.\n\nAsk us about phased schedules, after-hours work, and how we document scope so expectations stay aligned from demo day to final walkthrough.`,
+        highlights: [
+          "Design-build & general contracting",
+          "Licensed, insured, inspection-ready",
+          "Clear milestones & site protection",
+        ],
+      },
+      faqs: deriveRenovationFaqs(name, city),
+      contact: {
+        heading: "Tell us about your project",
+        subheading: `Share your goals — we'll respond with next steps, timeline context, and what to expect for projects in ${city} and nearby areas.`,
+      },
+      assets: {
+        heroSlides: intake.importedHeroSlides,
+        portfolioProjects: intake.importedPortfolioProjects,
+        siteStats: MOCK_SITE_STATS,
       },
       theme: pickThemeFromIntake(intake),
     };
@@ -286,6 +339,7 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
     assets: {
       heroSlides: intake.importedHeroSlides,
       portfolioProjects: intake.importedPortfolioProjects,
+      siteStats: MOCK_SITE_STATS,
     },
     theme: pickThemeFromIntake(intake),
   };
@@ -314,8 +368,34 @@ function resolveServiceArea(intake: IntakeFormData): string {
 
 function deriveServices(intake: IntakeFormData, name: string): ServiceItem[] {
   const lower = intake.businessDescription.toLowerCase();
+  const v = resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName);
 
-  if (resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName) === "plumbing") {
+  if (v === "renovations") {
+    return [
+      {
+        title: "Design & pre-construction",
+        description: `Concept development, budgeting, and permit-ready drawings so your remodel in ${intake.city || "your area"} starts with a plan you can trust — not surprises mid-build.`,
+        icon: "PenLine",
+      },
+      {
+        title: "Residential renovations",
+        description: `Whole-home updates, additions, and structural improvements with clean job sites, daily communication, and finishes that hold up to real life.`,
+        icon: "Home",
+      },
+      {
+        title: "Commercial build-outs",
+        description: `Tenant improvements, retail and office fit-outs, and phased work that keeps your business moving — coordinated trades and inspection-ready documentation.`,
+        icon: "Building2",
+      },
+      {
+        title: "Kitchens, baths & interiors",
+        description: `Cabinetry, tile, lighting, and millwork installed to designer specs — we sweat the details so the reveal feels effortless.`,
+        icon: "Sparkles",
+      },
+    ];
+  }
+
+  if (v === "plumbing") {
     return [
       { title: "Emergency Repairs", description: `When pipes burst or drains back up, ${name} responds fast. We handle urgent plumbing issues day or night to minimize damage and restore service quickly.`, icon: "Wrench" },
       { title: "Installations", description: "From new fixtures to full system installs, we bring precision workmanship to every job. All installations are code-compliant and properly permitted.", icon: "Settings" },
@@ -378,6 +458,31 @@ function derivePlumbingFaqs(name: string, city: string): FaqItem[] {
     {
       question: "What payment methods do you accept?",
       answer: `We accept major credit cards, debit, and other common payment methods. Ask us about financing for larger projects.`,
+    },
+  ];
+}
+
+function deriveRenovationFaqs(name: string, city: string): FaqItem[] {
+  return [
+    {
+      question: "Do you handle permits and inspections?",
+      answer: `Yes. ${name} prepares permit packages and coordinates inspections as part of our process. Requirements depend on scope and jurisdiction — we'll outline what's needed for your project in ${city} and surrounding areas.`,
+    },
+    {
+      question: "How long does a typical renovation take?",
+      answer: `Timelines vary by scope, material lead times, and inspections. After a site visit, we provide a phased schedule with milestones so you know what happens when — no vague "we'll be done soon" updates.`,
+    },
+    {
+      question: "Can you work while we stay open / live in the home?",
+      answer: `Often yes. We use dust containment, phased areas, and after-hours options for commercial work when needed. We'll propose a plan that fits your situation.`,
+    },
+    {
+      question: "Are estimates free?",
+      answer: `We typically start with a consultation and can provide a ballpark range before detailed pricing. Larger scopes move into line-item proposals once design direction is set.`,
+    },
+    {
+      question: "What markets do you serve?",
+      answer: `We take on residential and commercial projects across ${city} and nearby communities. Share your address and we'll confirm fit.`,
     },
   ];
 }

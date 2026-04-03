@@ -2,12 +2,21 @@
 
 import { type CSSProperties, useEffect, useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
+import { publishedNavHref, type NavHash } from "@/lib/published-nav-hrefs";
 
 interface Props {
   content: GeneratedSiteContent;
   intake: IntakeFormData;
   isPlumbing?: boolean;
   styleVariant?: "standard" | "split-bar" | "boxed";
+  /** Live published site: use `/slug/...` URLs instead of in-page anchors. */
+  publishedBasePath?: string;
+}
+
+function navHashFromLabel(label: string): NavHash {
+  const k = label.toLowerCase();
+  if (k === "stats") return "stats";
+  return k as NavHash;
 }
 
 function PhoneIcon({ className = "", style }: { className?: string; style?: CSSProperties }) {
@@ -38,10 +47,11 @@ export default function NavbarSection({
   intake,
   isPlumbing = false,
   styleVariant = "standard",
+  publishedBasePath,
 }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const links = ["Services", "Work", "About", "FAQ", "Reviews", "Contact"];
+  const links = ["Services", "Stats", "Work", "About", "FAQ", "Reviews", "Contact"];
   const cleanedPhone = intake.phone?.replace(/[^\d+]/g, "") || "";
   const hasCallNow = isPlumbing && Boolean(cleanedPhone);
   const phoneIconAttentionStyle: CSSProperties = {
@@ -116,7 +126,11 @@ export default function NavbarSection({
   const linksNode = (
     <div className="hidden md:flex items-center gap-6">
       {links.map((link) => (
-        <a key={link} href={`#${link.toLowerCase()}`} className="text-white/70 hover:text-white text-sm font-medium transition-colors">
+        <a
+          key={link}
+          href={publishedNavHref(publishedBasePath, navHashFromLabel(link))}
+          className="text-white/70 hover:text-white text-sm font-medium transition-colors"
+        >
           {link}
         </a>
       ))}
@@ -162,7 +176,11 @@ export default function NavbarSection({
             </div>
             <div className="ml-auto flex items-center gap-2">
               {callCta}
-              <a href="#contact" className="btn-primary hidden sm:inline-block" style={{ padding: "10px 18px", fontSize: "14px" }}>
+              <a
+                href={publishedNavHref(publishedBasePath, "contact")}
+                className="btn-primary hidden sm:inline-block"
+                style={{ padding: "10px 18px", fontSize: "14px" }}
+              >
                 {content.hero.ctaText}
               </a>
             </div>
@@ -202,7 +220,7 @@ export default function NavbarSection({
             {linksNode}
             <div className="hidden sm:flex items-center gap-2">
               {callCta}
-              <a href="#contact" className="btn-primary" style={{ padding: "10px 16px", fontSize: "14px" }}>
+              <a href={publishedNavHref(publishedBasePath, "contact")} className="btn-primary" style={{ padding: "10px 16px", fontSize: "14px" }}>
                 {content.hero.ctaText}
               </a>
             </div>
@@ -247,7 +265,7 @@ export default function NavbarSection({
           {linksNode}
           <div className="hidden sm:flex items-center gap-3">
             {callCta}
-            <a href="#contact" className="btn-primary" style={{ padding: "10px 20px", fontSize: "14px" }}>
+            <a href={publishedNavHref(publishedBasePath, "contact")} className="btn-primary" style={{ padding: "10px 20px", fontSize: "14px" }}>
               {content.hero.ctaText}
             </a>
           </div>
@@ -320,7 +338,7 @@ export default function NavbarSection({
               {links.map((link) => (
                 <a
                   key={link}
-                  href={`#${link.toLowerCase()}`}
+                  href={publishedNavHref(publishedBasePath, navHashFromLabel(link))}
                   className="text-white/85 hover:text-white py-2 text-base"
                   onClick={closeMenu}
                 >
@@ -349,7 +367,7 @@ export default function NavbarSection({
               </a>
             )}
             <a
-              href="#contact"
+              href={publishedNavHref(publishedBasePath, "contact")}
               className="btn-primary mt-3 text-center"
               onClick={closeMenu}
             >

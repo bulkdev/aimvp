@@ -4,12 +4,15 @@ import { applyIntakeLocationToCopy } from "@/lib/location";
 interface Props {
   content: GeneratedSiteContent;
   intake: IntakeFormData;
+  /** Published sites: `/slug/contact` instead of `#contact` on single-section pages. */
+  contactHref?: string;
 }
 
-export default function CtaBanner({ content, intake }: Props) {
+export default function CtaBanner({ content, intake, contactHref = "#contact" }: Props) {
   const contactSubheading = applyIntakeLocationToCopy(content.contact.subheading, intake);
   return (
     <section
+      id="cta"
       style={{
         background: `linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, var(--primary)) 100%)`,
         padding: "72px 0",
@@ -46,7 +49,7 @@ export default function CtaBanner({ content, intake }: Props) {
 
         <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
           <a
-            href="#contact"
+            href={contactHref}
             style={{
               background: "white",
               color: "var(--accent)",

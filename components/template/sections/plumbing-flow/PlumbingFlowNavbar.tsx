@@ -2,10 +2,18 @@
 
 import { type CSSProperties, useEffect, useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
+import { publishedNavHref, type NavHash } from "@/lib/published-nav-hrefs";
 
 interface Props {
   content: GeneratedSiteContent;
   intake: IntakeFormData;
+  publishedBasePath?: string;
+}
+
+function navHashFromLabel(label: string): NavHash {
+  const k = label.toLowerCase();
+  if (k === "stats") return "stats";
+  return k as NavHash;
 }
 
 function PhoneIcon({ className = "", style }: { className?: string; style?: CSSProperties }) {
@@ -32,10 +40,10 @@ function MenuIcon({ open }: { open: boolean }) {
 }
 
 /** Floating glass nav for the Plumbing Flow template (dark hero). */
-export default function PlumbingFlowNavbar({ content, intake }: Props) {
+export default function PlumbingFlowNavbar({ content, intake, publishedBasePath }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const links = ["Services", "Work", "About", "FAQ", "Reviews", "Contact"];
+  const links = ["Services", "Stats", "Work", "About", "FAQ", "Reviews", "Contact"];
   const cleanedPhone = intake.phone?.replace(/[^\d+]/g, "") || "";
   const hasCallNow = Boolean(cleanedPhone);
 
@@ -97,7 +105,7 @@ export default function PlumbingFlowNavbar({ content, intake }: Props) {
       {links.map((link) => (
         <a
           key={link}
-          href={`#${link.toLowerCase()}`}
+          href={publishedNavHref(publishedBasePath, navHashFromLabel(link))}
           className="text-white/75 hover:text-white text-sm font-medium transition-colors no-underline"
         >
           {link}
@@ -143,7 +151,7 @@ export default function PlumbingFlowNavbar({ content, intake }: Props) {
           <div className="flex items-center gap-2 shrink-0">
             {callCta}
             <a
-              href="#contact"
+              href={publishedNavHref(publishedBasePath, "contact")}
               className="hidden sm:inline-flex btn-primary no-underline text-center"
               style={{
                 padding: "10px 18px",
@@ -213,7 +221,11 @@ export default function PlumbingFlowNavbar({ content, intake }: Props) {
                   Call {intake.phone}
                 </a>
               )}
-              <a href="#contact" className="btn-outline text-center no-underline border-cyan-400/50 text-cyan-100" onClick={closeMenu}>
+              <a
+                href={publishedNavHref(publishedBasePath, "contact")}
+                className="btn-outline text-center no-underline border-cyan-400/50 text-cyan-100"
+                onClick={closeMenu}
+              >
                 {content.hero.ctaText}
               </a>
             </div>

@@ -4,7 +4,7 @@ import type { SiteTemplateChoice } from "@/types";
  * Which visual / copy template to use for the generated site.
  * Extend with new trades (HVAC, electrical, etc.) as you add layouts.
  */
-export type SiteTemplateVariant = "default" | "plumbing" | "superService";
+export type SiteTemplateVariant = "default" | "plumbing" | "superService" | "renovations";
 
 /** Keyword-based inference when the user leaves template on "auto". */
 export function inferSiteVariant(description: string, companyName = ""): SiteTemplateVariant {
@@ -24,6 +24,30 @@ export function inferSiteVariant(description: string, companyName = ""): SiteTem
   ];
   for (const word of superServiceSignals) {
     if (lower.includes(word)) return "superService";
+  }
+
+  const renovationSignals = [
+    "full-service home",
+    "full service home",
+    "commercial renovation",
+    "home renovation",
+    "home & commercial",
+    "renovation",
+    "renovate",
+    "remodel",
+    "remodeling",
+    "general contractor",
+    "design-build",
+    "design build",
+    "kitchen remodel",
+    "bathroom remodel",
+    "tenant improvement",
+    "build-out",
+    "buildout",
+    "commercial build",
+  ];
+  for (const word of renovationSignals) {
+    if (lower.includes(word)) return "renovations";
   }
 
   const plumbingSignals = [
@@ -66,6 +90,7 @@ export function resolveSiteVariant(
   companyName = ""
 ): SiteTemplateVariant {
   if (choice === "super-service") return "superService";
+  if (choice === "renovations") return "renovations";
   if (choice === "plumbing" || choice === "plumbing-split" || choice === "plumbing-boxed" || choice === "plumbing-flow") {
     return "plumbing";
   }

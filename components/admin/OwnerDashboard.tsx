@@ -13,7 +13,20 @@ function initialHeroTaglineLead(project: Project): string {
   return parts.length > 1 ? parts.slice(0, -1).join(" · ") : parts[0] || "";
 }
 import { fileToCompressedDataUrl, fileToFaviconDataUrl } from "@/lib/clientImage";
+import type { ParallaxSectionScope } from "@/lib/parallaxSettings";
+import { ParallaxSectionBgField } from "@/components/admin/ParallaxSectionBgField";
 import SiteLogoEditor from "@/components/admin/SiteLogoEditor";
+import GoogleReviewsImportBar from "@/components/admin/GoogleReviewsImportBar";
+import ProjectBackupBar from "@/components/admin/ProjectBackupBar";
+import {
+  normalizePortfolioLayout,
+  PORTFOLIO_LAYOUT_OPTIONS,
+  type PortfolioLayoutMode,
+} from "@/lib/portfolioLayout";
+import {
+  clampPortfolioHomePreviewCount,
+  DEFAULT_PORTFOLIO_HOME_PREVIEW_COUNT,
+} from "@/lib/portfolioPreview";
 
 interface Props {
   project: Project;
@@ -41,12 +54,124 @@ type EditableReview = {
   avatarLetter: string;
 };
 
-type SectionKey = "hero" | "services" | "portfolio" | "about" | "booking" | "faq" | "reviews" | "cta" | "payment" | "contact";
+type SiteStatRow = { value: string; label: string };
 
-const DEFAULT_SECTION_ORDER: SectionKey[] = ["hero", "services", "portfolio", "about", "booking", "faq", "reviews", "cta", "payment", "contact"];
+const DEFAULT_SITE_STATS: SiteStatRow[] = [
+  { value: "500+", label: "Projects completed" },
+  { value: "4.9", label: "Avg. star rating" },
+  { value: "A+", label: "BBB rating" },
+  { value: "100%", label: "Licensed & insured" },
+  { value: "15+", label: "Years in business" },
+];
+
+type ParallaxBgKey =
+  | "services"
+  | "stats"
+  | "portfolio"
+  | "about"
+  | "faq"
+  | "reviews"
+  | "cta"
+  | "contact"
+  | "booking"
+  | "payment";
+
+const PARALLAX_BG_LABELS: Record<ParallaxBgKey, string> = {
+  services: "Services / capabilities",
+  stats: "Stats strip (homepage #stats)",
+  portfolio: "Our work / portfolio",
+  about: "About",
+  faq: "FAQ",
+  reviews: "Reviews",
+  cta: "CTA banner",
+  contact: "Contact",
+  booking: "Booking",
+  payment: "Payment",
+};
+
+function initialParallaxBgs(project: Project): Record<ParallaxBgKey, string> {
+  const m = project.content.assets?.parallaxSectionBackgrounds ?? {};
+  return {
+    services: m.services ?? "",
+    stats: m.stats ?? "",
+    portfolio: m.portfolio ?? "",
+    about: m.about ?? "",
+    faq: m.faq ?? "",
+    reviews: m.reviews ?? "",
+    cta: m.cta ?? "",
+    contact: m.contact ?? "",
+    booking: m.booking ?? "",
+    payment: m.payment ?? "",
+  };
+}
+
+function initialParallaxSectionOverlays(project: Project): Record<ParallaxBgKey, number> {
+  const per = project.content.assets?.parallaxSectionOverlayOpacity ?? {};
+  const legacy = project.content.assets?.parallaxOverlayOpacity ?? 100;
+  const n = (k: ParallaxBgKey) =>
+    Math.min(100, Math.max(0, per[k] ?? legacy));
+  return {
+    services: n("services"),
+    stats: n("stats"),
+    portfolio: n("portfolio"),
+    about: n("about"),
+    faq: n("faq"),
+    reviews: n("reviews"),
+    cta: n("cta"),
+    contact: n("contact"),
+    booking: n("booking"),
+    payment: n("payment"),
+  };
+}
+
+function initialParallaxSectionScopes(project: Project): Record<ParallaxBgKey, ParallaxSectionScope> {
+  const per = project.content.assets?.parallaxSectionScopes ?? {};
+  const legacy = project.content.assets?.parallaxSectionScope ?? "both";
+  const s = (k: ParallaxBgKey) => per[k] ?? legacy;
+  return {
+    services: s("services"),
+    stats: s("stats"),
+    portfolio: s("portfolio"),
+    about: s("about"),
+    faq: s("faq"),
+    reviews: s("reviews"),
+    cta: s("cta"),
+    contact: s("contact"),
+    booking: s("booking"),
+    payment: s("payment"),
+  };
+}
+
+type SectionKey =
+  | "hero"
+  | "services"
+  | "stats"
+  | "portfolio"
+  | "about"
+  | "booking"
+  | "faq"
+  | "reviews"
+  | "cta"
+  | "payment"
+  | "contact";
+
+const DEFAULT_SECTION_ORDER: SectionKey[] = [
+  "hero",
+  "services",
+  "stats",
+  "portfolio",
+  "about",
+  "booking",
+  "faq",
+  "reviews",
+  "cta",
+  "payment",
+  "contact",
+];
 const SECTION_LABELS: Record<SectionKey, string> = {
   hero: "Hero",
   services: "Services",
+  stats: "Stats strip",
   portfolio: "Our Work",
   about: "About",
   booking: "Booking",
@@ -110,6 +235,12 @@ export default function OwnerDashboard({ project }: Props) {
   const [email, setEmail] = useState(project.intake.email ?? "");
   const [address, setAddress] = useState(project.intake.address ?? "");
   const [logoDataUrl, setLogoDataUrl] = useState(project.intake.logoDataUrl ?? "");
+  const [navbarLogoDataUrl, setNavbarLogoDataUrl] = useState(project.intake.navbarLogoDataUrl ?? "");
+  const [navbarLogoHeightPx, setNavbarLogoHeightPx] = useState(project.intake.navbarLogoHeightPx ?? 40);
+  const [heroParallaxBackgroundUrl, setHeroParallaxBackgroundUrl] = useState(
+    project.content.assets?.heroParallaxBackgroundUrl ?? ""
+  );
+  const parallaxUploadRef = useRef<HTMLInputElement>(null);
   const [heroTitle, setHeroTitle] = useState(project.content.hero.title);
   const [heroSubtitle, setHeroSubtitle] = useState(project.content.hero.subtitle);
   const [heroTaglineLead, setHeroTaglineLead] = useState(() => initialHeroTaglineLead(project));
@@ -127,8 +258,11 @@ export default function OwnerDashboard({ project }: Props) {
   const [heroCtaPlacement, setHeroCtaPlacement] = useState<"inline" | "stacked" | "bottom-bar">(
     project.content.assets?.designVariants?.heroCtaPlacement ?? "inline"
   );
-  const [ourWorkVariant, setOurWorkVariant] = useState<"cards" | "minimal-grid" | "split-feature">(
-    project.content.assets?.designVariants?.ourWork ?? "cards"
+  const [ourWorkVariant, setOurWorkVariant] = useState<PortfolioLayoutMode>(() =>
+    normalizePortfolioLayout(project.content.assets?.designVariants?.ourWork)
+  );
+  const [portfolioHomePreviewCount, setPortfolioHomePreviewCount] = useState(
+    () => project.content.assets?.portfolioHomePreviewCount ?? DEFAULT_PORTFOLIO_HOME_PREVIEW_COUNT
   );
   const [services, setServices] = useState<ServiceItem[]>(project.content.services);
   const [serviceImages, setServiceImages] = useState<Record<string, string>>(project.content.assets?.serviceCardImages ?? {});
@@ -157,14 +291,29 @@ export default function OwnerDashboard({ project }: Props) {
           },
         ]
   );
-  const [sectionOrder, setSectionOrder] = useState<SectionKey[]>(
-    (() => {
-      const saved = ((project.content.assets?.sectionOrder as SectionKey[] | undefined) ?? []).filter((k) =>
-        DEFAULT_SECTION_ORDER.includes(k)
-      );
-      return [...saved, ...DEFAULT_SECTION_ORDER.filter((k) => !saved.includes(k))];
-    })()
+  const [sectionOrder, setSectionOrder] = useState<SectionKey[]>(() => {
+    const saved = ((project.content.assets?.sectionOrder as SectionKey[] | undefined) ?? []).filter((k) =>
+      DEFAULT_SECTION_ORDER.includes(k)
+    );
+    return saved.length > 0 ? saved : [...DEFAULT_SECTION_ORDER];
+  });
+  const [siteStats, setSiteStats] = useState<SiteStatRow[]>(
+    project.content.assets?.siteStats?.length
+      ? project.content.assets.siteStats.map((s) => ({ value: s.value || "", label: s.label || "" }))
+      : [...DEFAULT_SITE_STATS]
   );
+  const [parallaxSectionBgs, setParallaxSectionBgs] = useState<Record<ParallaxBgKey, string>>(() =>
+    initialParallaxBgs(project)
+  );
+  const [parallaxOverlayOpacity, setParallaxOverlayOpacity] = useState(() =>
+    Math.min(100, Math.max(0, project.content.assets?.parallaxOverlayOpacity ?? 100))
+  );
+  const [parallaxSectionOverlays, setParallaxSectionOverlays] = useState<Record<ParallaxBgKey, number>>(() =>
+    initialParallaxSectionOverlays(project)
+  );
+  const [parallaxSectionScopes, setParallaxSectionScopes] = useState<
+    Record<ParallaxBgKey, ParallaxSectionScope>
+  >(() => initialParallaxSectionScopes(project));
   const [draggingSection, setDraggingSection] = useState<SectionKey | null>(null);
   const [serviceGroups, setServiceGroups] = useState<ServiceGroup[]>(
     project.content.assets?.serviceGroups?.length
@@ -234,6 +383,38 @@ export default function OwnerDashboard({ project }: Props) {
     setProjects((prev) => prev.map((p, i) => (i === projectIdx ? { ...p, photos: [...p.photos, ...urls] } : p)));
   }
 
+  const [portfolioScrapeUrl, setPortfolioScrapeUrl] = useState("");
+  const [portfolioScrapeMax, setPortfolioScrapeMax] = useState(8);
+  const [portfolioScraping, setPortfolioScraping] = useState(false);
+
+  async function runPortfolioScrapeFromUrl() {
+    if (activeProject === null) return;
+    if (!portfolioScrapeUrl.trim()) {
+      setMsg("Enter a page URL to scrape images from.");
+      return;
+    }
+    setPortfolioScraping(true);
+    setMsg("");
+    try {
+      const res = await fetch("/api/scrape-portfolio-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: portfolioScrapeUrl.trim(), maxImages: portfolioScrapeMax }),
+      });
+      const data = (await res.json()) as { error?: string; images?: string[] };
+      if (!res.ok) throw new Error(data?.error || "Could not scrape images.");
+      const images = data.images ?? [];
+      setProjects((prev) =>
+        prev.map((p, i) => (i === activeProject ? { ...p, photos: [...p.photos, ...images] } : p))
+      );
+      setMsg(`Added ${images.length} image(s). Save to persist.`);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Scrape failed.");
+    } finally {
+      setPortfolioScraping(false);
+    }
+  }
+
   async function save() {
     setSaving(true);
     setMsg("");
@@ -244,6 +425,11 @@ export default function OwnerDashboard({ project }: Props) {
       const logoTrim = logoDataUrl.trim();
       if (logoTrim) nextIntake.logoDataUrl = logoTrim;
       else delete nextIntake.logoDataUrl;
+
+      const navLogoTrim = navbarLogoDataUrl.trim();
+      if (navLogoTrim) nextIntake.navbarLogoDataUrl = navLogoTrim;
+      else delete nextIntake.navbarLogoDataUrl;
+      nextIntake.navbarLogoHeightPx = Math.min(96, Math.max(24, Math.round(Number(navbarLogoHeightPx) || 40)));
 
       const payload = {
         intake: nextIntake,
@@ -275,6 +461,34 @@ export default function OwnerDashboard({ project }: Props) {
               }))
               .filter((r) => r.reviewerName && r.text),
             sectionOrder,
+            siteStats: siteStats
+              .map((s) => ({ value: s.value.trim(), label: s.label.trim() }))
+              .filter((s) => s.value && s.label),
+            parallaxSectionBackgrounds: (() => {
+              const o: Partial<Record<ParallaxBgKey, string>> = {};
+              (Object.keys(parallaxSectionBgs) as ParallaxBgKey[]).forEach((k) => {
+                const v = parallaxSectionBgs[k].trim();
+                if (v) o[k] = v;
+              });
+              return Object.keys(o).length > 0 ? o : undefined;
+            })(),
+            parallaxOverlayOpacity: parallaxOverlayOpacity,
+            parallaxSectionOverlayOpacity: (() => {
+              const o: Partial<Record<ParallaxBgKey, number>> = {};
+              (Object.keys(parallaxSectionOverlays) as ParallaxBgKey[]).forEach((k) => {
+                const v = parallaxSectionOverlays[k];
+                if (v !== 100) o[k] = v;
+              });
+              return Object.keys(o).length > 0 ? o : undefined;
+            })(),
+            parallaxSectionScopes: (() => {
+              const o: Partial<Record<ParallaxBgKey, ParallaxSectionScope>> = {};
+              (Object.keys(parallaxSectionScopes) as ParallaxBgKey[]).forEach((k) => {
+                const v = parallaxSectionScopes[k];
+                if (v !== "both") o[k] = v;
+              });
+              return Object.keys(o).length > 0 ? o : undefined;
+            })(),
             layoutVariant,
             designVariants: {
               navbar: navbarVariant,
@@ -295,6 +509,8 @@ export default function OwnerDashboard({ project }: Props) {
             portfolioEntries: projects,
             portfolioProjects: projects.map((p) => p.photos),
             ...(faviconDataUrl.trim() ? { faviconDataUrl: faviconDataUrl.trim() } : {}),
+            heroParallaxBackgroundUrl: heroParallaxBackgroundUrl.trim() || undefined,
+            portfolioHomePreviewCount: clampPortfolioHomePreviewCount(portfolioHomePreviewCount),
           },
         },
         publicSlug: publicSlug.trim(),
@@ -321,28 +537,53 @@ export default function OwnerDashboard({ project }: Props) {
   const editingProject = activeProject !== null ? projects[activeProject] : null;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6 md:p-10">
-      <div className="max-w-6xl mx-auto space-y-7">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-semibold">Owner Dashboard</h1>
-            <p className="text-white/60 text-sm">Click cards to edit. No code needed.</p>
+    <div className="min-h-screen bg-slate-950 text-white">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/90 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 md:px-10 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-lg md:text-xl font-semibold truncate">Owner Dashboard</h1>
+            <p className="text-white/55 text-xs hidden sm:block">Click cards to edit. No code needed.</p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2 justify-end">
             {session?.user?.isMainAdmin ? (
               <Link
                 href="/admin"
-                className="px-4 py-2 rounded-lg border border-amber-400/40 text-amber-100 hover:bg-amber-500/10 text-sm font-medium"
+                className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg border border-amber-400/40 text-amber-100 hover:bg-amber-500/10 text-xs md:text-sm font-medium"
               >
                 All sites
               </Link>
             ) : null}
-            <a href={previewUrl} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium">Open Preview</a>
-            <a href={customerSiteUrl} className="px-4 py-2 rounded-lg border border-white/20 hover:bg-white/10 text-sm font-medium">
+            <a
+              href={previewUrl}
+              className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs md:text-sm font-medium"
+            >
+              Open Preview
+            </a>
+            <a
+              href={customerSiteUrl}
+              className="px-3 py-1.5 md:px-4 md:py-2 rounded-lg border border-white/20 hover:bg-white/10 text-xs md:text-sm font-medium"
+            >
               Open public site
             </a>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={save}
+              className="px-4 py-1.5 md:px-5 md:py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-xs md:text-sm font-medium shrink-0"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+            {msg ? (
+              <span className="text-xs md:text-sm text-white/70 max-w-[200px] md:max-w-xs truncate" title={msg}>
+                {msg}
+              </span>
+            ) : null}
           </div>
         </div>
+      </header>
+
+      <div className="p-6 md:p-10 max-w-6xl mx-auto space-y-7">
+        <ProjectBackupBar projectId={project.id} />
 
         <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
           <h2 className="text-sm font-medium">Business info</h2>
@@ -361,6 +602,7 @@ export default function OwnerDashboard({ project }: Props) {
               <option value="plumbing-boxed" className="text-slate-900">Template: Plumbing — Boxed glass nav & hero</option>
               <option value="plumbing-flow" className="text-slate-900">Template: Plumbing — Flow (compact slider + glass nav)</option>
               <option value="super-service" className="text-slate-900">Template: Super Service — HVAC/plumbing</option>
+              <option value="renovations" className="text-slate-900">Template: Renovations — Parallax, particles, portfolio</option>
             </select>
             <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
             <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" />
@@ -390,6 +632,95 @@ export default function OwnerDashboard({ project }: Props) {
           brandLabel={companyName || "Site"}
           onError={setMsg}
         />
+
+        {siteTemplate === "renovations" ? (
+          <section className="rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-4 space-y-4">
+            <h2 className="text-sm font-medium text-emerald-100">Renovations template — top bar & parallax</h2>
+            <SiteLogoEditor
+              value={navbarLogoDataUrl || undefined}
+              onChange={(next) => setNavbarLogoDataUrl(next ?? "")}
+              brandLabel={`${companyName || "Site"} navbar`}
+              onError={setMsg}
+              heading="Navbar logo (renovations only)"
+              description="Optional. Separate from the site logo used in the footer. Shown in the fixed top bar."
+            />
+            <label className="block text-xs text-white/70">
+              Navbar logo height (px, 24–96)
+              <input
+                type="number"
+                min={24}
+                max={96}
+                className="mt-1 w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+                value={navbarLogoHeightPx}
+                onChange={(e) => setNavbarLogoHeightPx(Number(e.target.value))}
+              />
+            </label>
+            <div>
+              <p className="text-xs text-white/60 mb-2">Hero parallax background (optional)</p>
+              <p className="text-[11px] text-white/40 mb-2">
+                Replaces the default subway-tile pattern behind the hero. URL or upload.
+              </p>
+              <input
+                className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm mb-2"
+                value={heroParallaxBackgroundUrl}
+                onChange={(e) => setHeroParallaxBackgroundUrl(e.target.value)}
+                placeholder="https://… or leave empty for tile pattern"
+              />
+              <div className="flex flex-wrap gap-2 items-center">
+                <button
+                  type="button"
+                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs"
+                  onClick={() => parallaxUploadRef.current?.click()}
+                >
+                  Upload image
+                </button>
+                {heroParallaxBackgroundUrl ? (
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 rounded-lg border border-white/20 text-xs text-rose-300"
+                    onClick={() => setHeroParallaxBackgroundUrl("")}
+                  >
+                    Clear parallax image
+                  </button>
+                ) : null}
+                <input
+                  ref={parallaxUploadRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    try {
+                      setHeroParallaxBackgroundUrl(await fileToCompressedDataUrl(f, { maxEdge: 2560, quality: 0.88 }));
+                    } catch (err) {
+                      setMsg(err instanceof Error ? err.message : "Could not read image.");
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+              {heroParallaxBackgroundUrl ? (
+                <div className="mt-3 rounded-lg overflow-hidden border border-white/10 max-h-32">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={heroParallaxBackgroundUrl} alt="" className="w-full h-auto object-cover object-center max-h-32" />
+                </div>
+              ) : null}
+              <label className="mt-3 block text-xs text-white/70">
+                Hero parallax overlay strength (0–100%)
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  className="mt-1 block w-full accent-sky-500"
+                  value={parallaxOverlayOpacity}
+                  onChange={(e) => setParallaxOverlayOpacity(Number(e.target.value))}
+                />
+                <span className="text-white/50">{parallaxOverlayOpacity}%</span>
+              </label>
+            </div>
+          </section>
+        ) : null}
 
         <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
           <h2 className="text-sm font-medium">Site favicon (browser tab)</h2>
@@ -445,7 +776,16 @@ export default function OwnerDashboard({ project }: Props) {
         </section>
 
         <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
-          <h2 className="text-sm font-medium">Section order (drag to reorder)</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-medium">Sections on site (drag to reorder)</h2>
+            <button
+              type="button"
+              className="text-xs text-sky-300 hover:underline"
+              onClick={() => setSectionOrder([...DEFAULT_SECTION_ORDER])}
+            >
+              Reset to default list
+            </button>
+          </div>
           <div className="space-y-2">
             {sectionOrder.map((key) => (
               <div
@@ -467,14 +807,107 @@ export default function OwnerDashboard({ project }: Props) {
                   setDraggingSection(null);
                 }}
                 onDragEnd={() => setDraggingSection(null)}
-                className="px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-sm flex items-center justify-between cursor-move"
+                className="px-3 py-2 rounded-lg border border-white/15 bg-white/5 text-sm flex items-center justify-between gap-2 cursor-move"
               >
                 <span>{SECTION_LABELS[key]}</span>
-                <span className="text-white/40">::</span>
+                <span className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={key === "hero"}
+                    title={key === "hero" ? "Hero cannot be removed" : "Remove section from page"}
+                    className="text-xs text-rose-300 hover:underline disabled:opacity-30 disabled:no-underline"
+                    onClick={() => key !== "hero" && setSectionOrder((prev) => prev.filter((k) => k !== key))}
+                  >
+                    Remove
+                  </button>
+                  <span className="text-white/40">::</span>
+                </span>
               </div>
             ))}
           </div>
-          <p className="text-xs text-white/50">Navbar and Footer stay fixed. Disabled sections (booking/payment toggles) are skipped automatically.</p>
+          {DEFAULT_SECTION_ORDER.some((k) => !sectionOrder.includes(k)) && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {DEFAULT_SECTION_ORDER.filter((k) => !sectionOrder.includes(k)).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  className="text-xs rounded-md border border-white/20 bg-white/5 px-2 py-1 hover:bg-white/10"
+                  onClick={() => setSectionOrder((prev) => [...prev, k])}
+                >
+                  + {SECTION_LABELS[k]}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-white/50">
+            Removed sections no longer appear on the live site. Booking/Payment still respect intake toggles.
+          </p>
+        </section>
+
+        <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+          <h2 className="text-sm font-medium">Scrolling stats strip</h2>
+          <p className="text-xs text-white/50">Shown when the &quot;Stats strip&quot; section is enabled.</p>
+          <div className="space-y-2">
+            {siteStats.map((row, idx) => (
+              <div key={idx} className="flex flex-wrap gap-2 items-center">
+                <input
+                  className="bg-white/5 border border-white/15 rounded-lg px-2 py-1.5 text-sm w-24"
+                  value={row.value}
+                  onChange={(e) =>
+                    setSiteStats((prev) => prev.map((r, i) => (i === idx ? { ...r, value: e.target.value } : r)))
+                  }
+                  placeholder="500+"
+                />
+                <input
+                  className="flex-1 min-w-[140px] bg-white/5 border border-white/15 rounded-lg px-2 py-1.5 text-sm"
+                  value={row.label}
+                  onChange={(e) =>
+                    setSiteStats((prev) => prev.map((r, i) => (i === idx ? { ...r, label: e.target.value } : r)))
+                  }
+                  placeholder="Projects completed"
+                />
+                <button
+                  type="button"
+                  className="text-xs text-rose-300"
+                  onClick={() => setSiteStats((prev) => prev.filter((_, i) => i !== idx))}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="text-xs text-sky-300 hover:underline"
+              onClick={() => setSiteStats((prev) => [...prev, { value: "", label: "" }])}
+            >
+              + Add stat
+            </button>
+          </div>
+        </section>
+
+        <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+          <h2 className="text-sm font-medium">Section parallax backgrounds</h2>
+          <p className="text-xs text-white/50">
+            Per section: image, overlay strength, and home vs standalone pages. Empty images use the hero parallax image,
+            then defaults. Stats use <span className="text-white/70">#stats</span> on the homepage — no /stats page.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {(Object.keys(PARALLAX_BG_LABELS) as ParallaxBgKey[]).map((key) => (
+              <ParallaxSectionBgField
+                key={key}
+                label={PARALLAX_BG_LABELS[key]}
+                value={parallaxSectionBgs[key]}
+                onChange={(next) => setParallaxSectionBgs((prev) => ({ ...prev, [key]: next }))}
+                overlayOpacity={parallaxSectionOverlays[key]}
+                onOverlayOpacityChange={(next) =>
+                  setParallaxSectionOverlays((prev) => ({ ...prev, [key]: next }))
+                }
+                scope={parallaxSectionScopes[key]}
+                onScopeChange={(next) => setParallaxSectionScopes((prev) => ({ ...prev, [key]: next }))}
+                onError={setMsg}
+              />
+            ))}
+          </div>
         </section>
 
         <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
@@ -531,7 +964,7 @@ export default function OwnerDashboard({ project }: Props) {
                 const navs: Array<"standard" | "split-bar" | "boxed"> = ["standard", "split-bar", "boxed"];
                 const slides: Array<"fade" | "zoom" | "slide"> = ["fade", "zoom", "slide"];
                 const ctas: Array<"inline" | "stacked" | "bottom-bar"> = ["inline", "stacked", "bottom-bar"];
-                const works: Array<"cards" | "minimal-grid" | "split-feature"> = ["cards", "minimal-grid", "split-feature"];
+                const works: PortfolioLayoutMode[] = ["masonry", "grid-3", "slider"];
                 setNavbarVariant(navs[Math.floor(Math.random() * navs.length)]);
                 setHeroSlideshowVariant(slides[Math.floor(Math.random() * slides.length)]);
                 setHeroCtaPlacement(ctas[Math.floor(Math.random() * ctas.length)]);
@@ -594,12 +1027,39 @@ export default function OwnerDashboard({ project }: Props) {
               <option value="stacked" className="text-slate-900">Hero CTA: Stacked</option>
               <option value="bottom-bar" className="text-slate-900">Hero CTA: Bottom bar</option>
             </select>
-            <select className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={ourWorkVariant} onChange={(e) => setOurWorkVariant(e.target.value as "cards" | "minimal-grid" | "split-feature")}>
-              <option value="cards" className="text-slate-900">Our Work: Cards</option>
-              <option value="minimal-grid" className="text-slate-900">Our Work: Minimal grid</option>
-              <option value="split-feature" className="text-slate-900">Our Work: Split feature</option>
+            <select
+              className="bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+              value={ourWorkVariant}
+              onChange={(e) => setOurWorkVariant(e.target.value as PortfolioLayoutMode)}
+            >
+              {PORTFOLIO_LAYOUT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value} className="text-slate-900">
+                  Our Work: {o.label}
+                </option>
+              ))}
             </select>
           </div>
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-1 text-[11px] text-white/60">
+              <span>Photos / projects to show on home (before blurred “See more”)</span>
+              <input
+                type="number"
+                min={1}
+                max={48}
+                className="w-24 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white"
+                value={portfolioHomePreviewCount}
+                onChange={(e) =>
+                  setPortfolioHomePreviewCount(
+                    Math.min(48, Math.max(1, Math.round(Number(e.target.value) || DEFAULT_PORTFOLIO_HOME_PREVIEW_COUNT)))
+                  )
+                }
+              />
+            </label>
+          </div>
+          <p className="mt-1 text-[11px] text-white/45">
+            Our Work: masonry columns, 3-column grid, or one-photo slider — matches preview and published site. Extra
+            items link to the full portfolio page.
+          </p>
         </section>
 
         <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
@@ -628,6 +1088,9 @@ export default function OwnerDashboard({ project }: Props) {
               Add Review
             </button>
           </div>
+          <GoogleReviewsImportBar
+            onImported={(rows) => setManualReviews((prev) => [...prev, ...rows])}
+          />
           <div className="space-y-3">
             {manualReviews.map((review, idx) => (
               <div key={idx} className="border border-white/10 rounded-lg p-3 grid grid-cols-1 md:grid-cols-6 gap-2">
@@ -802,13 +1265,6 @@ export default function OwnerDashboard({ project }: Props) {
             ))}
           </div>
         </section>
-
-        <div className="flex items-center gap-3">
-          <button type="button" disabled={saving} onClick={save} className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-sm font-medium">
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-          {msg && <span className="text-sm text-white/70">{msg}</span>}
-        </div>
       </div>
 
       {editingService && activeService !== null && (
@@ -857,6 +1313,38 @@ export default function OwnerDashboard({ project }: Props) {
               </select>
             </div>
             <textarea className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 h-24" value={editingProject.review} onChange={(e) => setProjects((prev) => prev.map((p, i) => (i === activeProject ? { ...p, review: e.target.value } : p)))} />
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 space-y-2">
+              <p className="text-xs text-white/60">Import images from a web page</p>
+              <input
+                className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm"
+                placeholder="https://example.com/gallery-or-project-page"
+                value={portfolioScrapeUrl}
+                onChange={(e) => setPortfolioScrapeUrl(e.target.value)}
+              />
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="text-xs text-white/60">
+                  Max images
+                  <input
+                    type="number"
+                    min={1}
+                    max={24}
+                    className="mt-1 block w-24 bg-white/5 border border-white/15 rounded-lg px-2 py-1.5 text-sm"
+                    value={portfolioScrapeMax}
+                    onChange={(e) =>
+                      setPortfolioScrapeMax(Math.min(24, Math.max(1, Number(e.target.value) || 8)))
+                    }
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={portfolioScraping}
+                  onClick={() => void runPortfolioScrapeFromUrl()}
+                  className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-xs font-medium"
+                >
+                  {portfolioScraping ? "Scraping…" : "Scrape images"}
+                </button>
+              </div>
+            </div>
             <div className="flex items-center justify-between">
               <div>
                 <input

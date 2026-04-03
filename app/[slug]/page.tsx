@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProjectByPublicSlug } from "@/lib/store";
-import { absoluteUrl, isReservedPublicSlug, publicPagesEnabled } from "@/lib/seo";
+import { absoluteUrl, buildPublishedBasePath, isReservedPublicSlug, publicPagesEnabled } from "@/lib/seo";
 import { intakeLocationLine } from "@/lib/location";
 import { siteFaviconIcons } from "@/lib/favicon-metadata";
 
@@ -19,7 +19,7 @@ export default async function CustomerSlugPage({ params }: Props) {
   if (isReservedPublicSlug(slug)) notFound();
   const project = await getProjectByPublicSlug(slug);
   if (!project) notFound();
-  return <SiteTemplate project={project} />;
+  return <SiteTemplate project={project} publishedBasePath={buildPublishedBasePath(project)} />;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

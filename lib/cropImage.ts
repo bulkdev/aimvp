@@ -10,25 +10,80 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Renders the cropped region to a data URL; downscales so logos stay small for API payloads. */
+/**
+ * Renders the crop **frame** at full size, then draws only the part of the source image that falls
+ * inside that frame. Letterboxing uses **transparent** pixels for PNG (preserves logo alpha); JPEG
+ * uses an opaque fill (default black). Avoids drawImage clipping when the crop extends past the bitmap.
+ */
 export async function getCroppedImageDataUrl(
   imageSrc: string,
   pixelCrop: Area,
-  options?: { maxEdge?: number; mimeType?: "image/png" | "image/jpeg"; quality?: number }
+  options?: {
+    maxEdge?: number;
+    mimeType?: "image/png" | "image/jpeg";
+    quality?: number;
+    /**
+     * Letterbox behind the image. PNG defaults to transparent; set e.g. `"#000000"` for a solid bar.
+     * JPEG always needs an opaque color — defaults to `"#000000"` when omitted.
+     */
+    background?: string;
+  }
 ): Promise<string> {
   const image = await loadImage(imageSrc);
+  const iw = image.naturalWidth;
+  const ih = image.naturalHeight;
   const maxEdge = options?.maxEdge ?? 512;
-  const { width, height } = pixelCrop;
-  const scale = Math.min(1, maxEdge / Math.max(width, height, 1));
-  const outW = Math.max(1, Math.round(width * scale));
-  const outH = Math.max(1, Math.round(height * scale));
+
+  const cx = pixelCrop.x;
+  const cy = pixelCrop.y;
+  const cw = Math.max(1, pixelCrop.width);
+  const ch = Math.max(1, pixelCrop.height);
+
+  const scale = Math.min(1, maxEdge / Math.max(cw, ch, 1));
+  const outW = Math.max(1, Math.round(cw * scale));
+  const outH = Math.max(1, Math.round(ch * scale));
+
   const canvas = document.createElement("canvas");
   canvas.width = outW;
   canvas.height = outH;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { alpha: true });
   if (!ctx) throw new Error("Canvas not supported");
-  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, outW, outH);
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
   const mime = options?.mimeType ?? "image/png";
+  if (mime === "image/jpeg") {
+    ctx.fillStyle = options?.background ?? "#000000";
+    ctx.fillRect(0, 0, outW, outH);
+  } else {
+    const bg = options?.background;
+    if (bg && bg !== "transparent") {
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, outW, outH);
+    } else {
+      ctx.clearRect(0, 0, outW, outH);
+    }
+  }
+
+  // Intersection: crop rectangle ∩ image bitmap (natural coords)
+  const sx0 = Math.max(0, Math.floor(cx));
+  const sy0 = Math.max(0, Math.floor(cy));
+  const sx1 = Math.min(iw, Math.ceil(cx + cw));
+  const sy1 = Math.min(ih, Math.ceil(cy + ch));
+  const sw = sx1 - sx0;
+  const sh = sy1 - sy0;
+
+  if (sw > 0 && sh > 0) {
+    const scaleX = outW / cw;
+    const scaleY = outH / ch;
+    const dx = (sx0 - cx) * scaleX;
+    const dy = (sy0 - cy) * scaleY;
+    const dw = sw * scaleX;
+    const dh = sh * scaleY;
+    ctx.drawImage(image, sx0, sy0, sw, sh, dx, dy, dw, dh);
+  }
+
   const q = options?.quality ?? 0.92;
   return mime === "image/jpeg" ? canvas.toDataURL("image/jpeg", q) : canvas.toDataURL("image/png");
 }

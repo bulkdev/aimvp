@@ -10,7 +10,9 @@ export type SiteTemplateChoice =
   /** Compact slider hero + glass nav (same trade layout as other plumbing templates) */
   | "plumbing-flow"
   /** Multi-trade HVAC/plumbing style: promo bar, Book Online, trade cards, areas grid */
-  | "super-service";
+  | "super-service"
+  /** Renovation / GC: parallax sections, particle hero, Instagram-style portfolio grid */
+  | "renovations";
 
 export interface IntakeFormData {
   companyName: string;
@@ -23,6 +25,10 @@ export interface IntakeFormData {
   /** When set, picks the visual template; "auto" uses keyword inference. */
   siteTemplate?: SiteTemplateChoice;
   logoDataUrl?: string; // base64 data URL of uploaded logo
+  /** Optional: used by renovations template navbar only (footer still uses logoDataUrl). */
+  navbarLogoDataUrl?: string;
+  /** Navbar logo height in px (24–96). Renovations template. */
+  navbarLogoHeightPx?: number;
   phone?: string;
   email?: string;
   address?: string;
@@ -93,6 +99,7 @@ export interface GeneratedSiteContent {
     sectionOrder?: Array<
       | "hero"
       | "services"
+      | "stats"
       | "portfolio"
       | "about"
       | "booking"
@@ -102,12 +109,15 @@ export interface GeneratedSiteContent {
       | "payment"
       | "contact"
     >;
+    /** Scrolling stats strip (e.g. projects completed, reviews, BBB, insured). */
+    siteStats?: { label: string; value: string }[];
     layoutVariant?: "standard" | "services-first" | "about-first";
     designVariants?: {
       navbar?: "standard" | "split-bar" | "boxed";
       heroSlideshow?: "fade" | "zoom" | "slide";
       heroCtaPlacement?: "inline" | "stacked" | "bottom-bar";
-      ourWork?: "cards" | "minimal-grid" | "split-feature";
+      /** Our Work / portfolio: masonry (Pinterest-style), uniform 3-col grid, or single-photo slider. Legacy values normalized at runtime. */
+      ourWork?: "masonry" | "grid-3" | "slider" | "cards" | "minimal-grid" | "split-feature";
     };
     serviceGroups?: {
       title: string;
@@ -121,10 +131,83 @@ export interface GeneratedSiteContent {
       review: string;
       rating: number;
     }[];
+    /**
+     * Home page portfolio / project feed: max items to show before a blurred “+ See more” tile
+     * linking to the full `/work` page (when there are more photos or projects than this count).
+     */
+    portfolioHomePreviewCount?: number;
     /** Plumbing hero eyebrow: text before " · {location}" (e.g. Licensed plumbers). Location always follows intake city/state when set. */
     heroTaglineLead?: string;
     /** Browser tab / bookmark icon (PNG, ICO, or SVG data URL). Set in site admin. */
     faviconDataUrl?: string;
+    /**
+     * Renovations template: full-bleed image behind the parallax hero (URL or data URL).
+     * When unset, the default subway-tile pattern is used.
+     */
+    heroParallaxBackgroundUrl?: string;
+    /**
+     * Optional parallax background image per section (URL or data URL).
+     * Used on the one-page site and on standalone SEO subpages; falls back to hero parallax then a default stock image.
+     */
+    parallaxSectionBackgrounds?: Partial<
+      Record<
+        | "services"
+        | "stats"
+        | "portfolio"
+        | "about"
+        | "faq"
+        | "reviews"
+        | "cta"
+        | "contact"
+        | "booking"
+        | "payment",
+        string
+      >
+    >;
+    /**
+     * 0–100: scrim over the **renovations hero** custom parallax image only.
+     * Section strips use `parallaxSectionOverlayOpacity` per key (falling back to this for older projects).
+     */
+    parallaxOverlayOpacity?: number;
+    /** @deprecated Prefer `parallaxSectionScopes` per section; used as fallback when a section has no entry. */
+    parallaxSectionScope?: "home" | "subpage" | "both";
+    /**
+     * Per-section parallax scrim strength (0–100). Missing keys fall back to `parallaxOverlayOpacity`, then 100.
+     */
+    parallaxSectionOverlayOpacity?: Partial<
+      Record<
+        | "services"
+        | "stats"
+        | "portfolio"
+        | "about"
+        | "faq"
+        | "reviews"
+        | "cta"
+        | "contact"
+        | "booking"
+        | "payment",
+        number
+      >
+    >;
+    /**
+     * Per-section: show parallax on home one-pager, standalone SEO pages, or both.
+     * Missing keys fall back to `parallaxSectionScope`, then `"both"`.
+     */
+    parallaxSectionScopes?: Partial<
+      Record<
+        | "services"
+        | "stats"
+        | "portfolio"
+        | "about"
+        | "faq"
+        | "reviews"
+        | "cta"
+        | "contact"
+        | "booking"
+        | "payment",
+        "home" | "subpage" | "both"
+      >
+    >;
   };
   theme: SiteTheme;
 }
@@ -190,3 +273,11 @@ export interface EnrichLinkResponse {
   >;
   notes?: string[];
 }
+
+/** POST /api/google-reviews — import reviews from a Google Maps / Business URL (Places API). */
+export type GoogleReviewsImportResponse = {
+  reviews: NonNullable<NonNullable<GeneratedSiteContent["assets"]>["manualReviews"]>;
+  placeName?: string;
+  googleMapsUri?: string;
+  notes?: string[];
+};

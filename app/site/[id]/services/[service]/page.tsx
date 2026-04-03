@@ -42,7 +42,7 @@ export default async function ServiceLandingPage({ params }: Props) {
           </p>
         </div>
       </section>
-      <SiteTemplate project={project} />
+      <SiteTemplate project={project} publishedBasePath={buildPublishedBasePath(project)} />
     </>
   );
 }

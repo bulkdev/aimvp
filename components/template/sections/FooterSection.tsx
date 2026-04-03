@@ -1,9 +1,17 @@
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
 import { normalizeNap } from "@/lib/seo";
+import { publishedNavHref, type NavHash } from "@/lib/published-nav-hrefs";
 
 interface Props {
   content: GeneratedSiteContent;
   intake: IntakeFormData;
+  publishedBasePath?: string;
+}
+
+function navHashFromLabel(label: string): NavHash {
+  const k = label.toLowerCase();
+  if (k === "stats") return "stats";
+  return k as NavHash;
 }
 
 function SocialIcon({ name }: { name: "Facebook" | "Instagram" | "LinkedIn" | "X" }) {
@@ -37,7 +45,7 @@ function SocialIcon({ name }: { name: "Facebook" | "Instagram" | "LinkedIn" | "X
   );
 }
 
-export default function FooterSection({ content, intake }: Props) {
+export default function FooterSection({ content, intake, publishedBasePath }: Props) {
   const year = new Date().getFullYear();
   const nap = normalizeNap(intake);
   const socialLinks = content.assets?.socialLinks ?? {};
@@ -111,10 +119,10 @@ export default function FooterSection({ content, intake }: Props) {
               Quick Links
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {["Services", "Work", "About", "FAQ", "Reviews", "Contact"].map((link) => (
+              {["Services", "Stats", "Work", "About", "FAQ", "Reviews", "Contact"].map((link) => (
                 <a
                   key={link}
-                  href={`#${link.toLowerCase()}`}
+                  href={publishedNavHref(publishedBasePath, navHashFromLabel(link))}
                   style={{ color: "rgba(255,255,255,0.5)", fontSize: "14px", textDecoration: "none", transition: "color 0.2s" }}
                 >
                   {link}

@@ -112,4 +112,27 @@
   .landing-hero-shimmer {
     animation: hero-shimmer 5s ease-in-out infinite;
   }
+
+  @keyframes stats-marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-stats-marquee {
+    animation: stats-marquee 48s linear infinite;
+  }
+
+  @media (min-width: 768px) {
+    .animate-stats-marquee {
+      animation-duration: 56s;
+    }
+  }
+
+  .animate-stats-marquee:hover {
+    animation-play-state: paused;
+  }
 }

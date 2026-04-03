@@ -1,19 +1,27 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import Cropper, { type Area } from "react-easy-crop";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import Cropper, { type Area, type MediaSize, type Size } from "react-easy-crop";
 import { getCroppedImageDataUrl } from "@/lib/cropImage";
+import { getCroppedAreaPixelsForExport } from "@/lib/reactEasyCropExport";
 import { fileToCompressedDataUrl } from "@/lib/clientImage";
 
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 
+/** Wide ratios first — tall ratios (4:3) clip horizontal wordmarks unless zoomed far out. */
 const ASPECT_PRESETS: { label: string; value: number | undefined }[] = [
   { label: "Free", value: undefined },
-  { label: "1:1", value: 1 },
+  { label: "3:1", value: 3 },
+  { label: "21:9", value: 21 / 9 },
   { label: "16:9", value: 16 / 9 },
+  { label: "2:1", value: 2 },
+  { label: "1:1", value: 1 },
   { label: "4:3", value: 4 / 3 },
   { label: "3:2", value: 3 / 2 },
 ];
+
+const MIN_ZOOM = 0.12;
+const MAX_ZOOM = 4;
 
 function isSvgDataUrl(url: string): boolean {
   return url.trimStart().toLowerCase().startsWith("data:image/svg+xml");
@@ -27,23 +35,78 @@ interface Props {
   brandLabel?: string;
   /** Surface errors (e.g. file too large) */
   onError?: (message: string) => void;
+  /** Override default card title (e.g. renovations-only navbar logo). */
+  heading?: string;
+  /** Override default helper text under the title. */
+  description?: string;
 }
 
 /**
  * Navbar logo: preview, upload with crop, re-crop existing, remove.
  */
-export default function SiteLogoEditor({ value, onChange, brandLabel = "Business", onError }: Props) {
+export default function SiteLogoEditor({
+  value,
+  onChange,
+  brandLabel = "Business",
+  onError,
+  heading = "Site logo (navbar & footer)",
+  description = "Upload a new image and crop it, or crop the current logo. Logos are saved as PNG (max ~640px) to keep saves fast.",
+}: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [aspect, setAspect] = useState<number | undefined>(1);
+  const [aspect, setAspect] = useState<number | undefined>(undefined);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  /** Fallback only — Apply uses getCroppedAreaPixelsForExport + sync refs (avoids stale crop×zoom from callbacks). */
+  const croppedPixelsRef = useRef<Area | null>(null);
+  const mediaSizeRef = useRef<MediaSize | null>(null);
+  const cropSizeRef = useRef<Size | null>(null);
+  const cropSyncRef = useRef({ x: 0, y: 0 });
+  const zoomSyncRef = useRef(1);
   const [busy, setBusy] = useState(false);
+  /** Measured crop frame — `aspect={undefined}` would fall back to react-easy-crop default 4/3, breaking "Free". */
+  const cropContainerRef = useRef<HTMLDivElement>(null);
+  const [containerAspect, setContainerAspect] = useState(16 / 9);
+  /** Never pass `undefined` to Cropper — its default is 4/3. */
+  const cropperAspect = aspect ?? containerAspect;
 
-  const onCropComplete = useCallback((_area: Area, pixels: Area) => {
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = cropContainerRef.current;
+    if (!el) return;
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        setContainerAspect(r.width / r.height);
+      }
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, imageSrc]);
+
+  /** Keep in sync with React state after every commit (covers any missed callbacks). */
+  useLayoutEffect(() => {
+    cropSyncRef.current = crop;
+    zoomSyncRef.current = zoom;
+  }, [crop, zoom]);
+
+  const syncCropPixels = useCallback((_area: Area, pixels: Area) => {
+    croppedPixelsRef.current = pixels;
     setCroppedAreaPixels(pixels);
+  }, []);
+
+  const handleCropChange = useCallback((next: { x: number; y: number }) => {
+    cropSyncRef.current = next;
+    setCrop(next);
+  }, []);
+
+  const handleZoomChange = useCallback((z: number) => {
+    zoomSyncRef.current = z;
+    setZoom(z);
   }, []);
 
   const closeModal = useCallback(() => {
@@ -52,13 +115,35 @@ export default function SiteLogoEditor({ value, onChange, brandLabel = "Business
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setCroppedAreaPixels(null);
+    croppedPixelsRef.current = null;
+    mediaSizeRef.current = null;
+    cropSizeRef.current = null;
+    cropSyncRef.current = { x: 0, y: 0 };
+    zoomSyncRef.current = 1;
   }, []);
 
   const applyCrop = useCallback(async () => {
-    if (!imageSrc || !croppedAreaPixels) return;
+    if (!imageSrc) return;
+    const ms = mediaSizeRef.current;
+    const cs = cropSizeRef.current;
+    let pixels: Area | null = null;
+    if (ms && cs) {
+      /** Same `aspect` as Cropper `getAspect()` when `cropSize` isn’t passed: props.aspect (not cropSize ratio). */
+      pixels = getCroppedAreaPixelsForExport(
+        cropSyncRef.current,
+        ms,
+        cs,
+        cropperAspect,
+        zoomSyncRef.current,
+        0,
+        true
+      );
+    }
+    if (!pixels) pixels = croppedPixelsRef.current ?? croppedAreaPixels;
+    if (!pixels) return;
     setBusy(true);
     try {
-      const dataUrl = await getCroppedImageDataUrl(imageSrc, croppedAreaPixels, {
+      const dataUrl = await getCroppedImageDataUrl(imageSrc, pixels, {
         maxEdge: 640,
         mimeType: "image/png",
       });
@@ -69,7 +154,7 @@ export default function SiteLogoEditor({ value, onChange, brandLabel = "Business
     } finally {
       setBusy(false);
     }
-  }, [imageSrc, croppedAreaPixels, onChange, closeModal, onError]);
+  }, [imageSrc, croppedAreaPixels, cropperAspect, onChange, closeModal, onError]);
 
   async function loadFileForCrop(file: File) {
     if (file.size > MAX_FILE_BYTES) {
@@ -87,10 +172,15 @@ export default function SiteLogoEditor({ value, onChange, brandLabel = "Business
     }
     const dataUrl = await fileToCompressedDataUrl(file, { maxEdge: 2400, quality: 0.9 });
     setImageSrc(dataUrl);
-    setAspect(1);
+    setAspect(undefined);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setCroppedAreaPixels(null);
+    croppedPixelsRef.current = null;
+    mediaSizeRef.current = null;
+    cropSizeRef.current = null;
+    cropSyncRef.current = { x: 0, y: 0 };
+    zoomSyncRef.current = 1;
     setOpen(true);
   }
 
@@ -101,10 +191,15 @@ export default function SiteLogoEditor({ value, onChange, brandLabel = "Business
       return;
     }
     setImageSrc(value);
-    setAspect(1);
+    setAspect(undefined);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setCroppedAreaPixels(null);
+    croppedPixelsRef.current = null;
+    mediaSizeRef.current = null;
+    cropSizeRef.current = null;
+    cropSyncRef.current = { x: 0, y: 0 };
+    zoomSyncRef.current = 1;
     setOpen(true);
   }
 
@@ -112,10 +207,8 @@ export default function SiteLogoEditor({ value, onChange, brandLabel = "Business
     <>
       <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
         <div>
-          <h3 className="text-sm font-medium text-white">Site logo (navbar & footer)</h3>
-          <p className="text-xs text-white/50 mt-1">
-            Upload a new image and crop it, or crop the current logo. Logos are saved as PNG (max ~640px) to keep saves fast.
-          </p>
+          <h3 className="text-sm font-medium text-white">{heading}</h3>
+          <p className="text-xs text-white/50 mt-1">{description}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -198,21 +291,38 @@ export default function SiteLogoEditor({ value, onChange, brandLabel = "Business
               </button>
             </div>
 
-            <div className="relative h-[min(50vh,320px)] w-full bg-black">
+            <div ref={cropContainerRef} className="relative h-[min(56vh,400px)] w-full bg-black">
               <Cropper
                 image={imageSrc}
                 crop={crop}
                 zoom={zoom}
-                aspect={aspect}
-                onCropChange={setCrop}
-                onZoomChange={setZoom}
-                onCropComplete={onCropComplete}
+                aspect={cropperAspect}
+                minZoom={MIN_ZOOM}
+                maxZoom={MAX_ZOOM}
+                onCropChange={handleCropChange}
+                onZoomChange={handleZoomChange}
+                onMediaLoaded={(ms) => {
+                  mediaSizeRef.current = ms;
+                }}
+                setMediaSize={(ms) => {
+                  mediaSizeRef.current = ms;
+                }}
+                onCropSizeChange={(cs) => {
+                  cropSizeRef.current = cs;
+                }}
+                onCropAreaChange={syncCropPixels}
                 showGrid
                 objectFit="contain"
               />
             </div>
 
             <div className="p-4 space-y-3 border-t border-white/10">
+              <p className="text-[11px] leading-snug text-white/45">
+                <strong className="text-white/70">Wide logos:</strong> use <span className="text-white/80">Free</span> or{" "}
+                <span className="text-white/80">3:1 / 21:9</span>. Drag <strong className="text-white/70">Zoom</strong>{" "}
+                left to zoom <em>out</em> and fit the full image — square or 4:3 crops often can&apos;t cover the full
+                width.
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {ASPECT_PRESETS.map((p) => (
                   <button
@@ -230,14 +340,14 @@ export default function SiteLogoEditor({ value, onChange, brandLabel = "Business
                 ))}
               </div>
               <label className="flex items-center gap-3 text-xs text-white/70">
-                Zoom
+                Zoom (out ← → in)
                 <input
                   type="range"
-                  min={1}
-                  max={3}
-                  step={0.05}
+                  min={MIN_ZOOM}
+                  max={MAX_ZOOM}
+                  step={0.02}
                   value={zoom}
-                  onChange={(e) => setZoom(Number(e.target.value))}
+                  onChange={(e) => handleZoomChange(Number(e.target.value))}
                   className="flex-1 accent-indigo-500"
                 />
               </label>
