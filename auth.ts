@@ -4,6 +4,8 @@ import { isMainAdminEmail } from "@/lib/admin-env";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
+  /** Required in production; set AUTH_SECRET or NEXTAUTH_SECRET in the host env. */
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   providers: [
     Credentials({
       credentials: {
