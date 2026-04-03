@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useMemo, useRef, useState } from "react";
 import type { Project, ServiceItem, SiteTheme, SiteTemplateChoice } from "@/types";
+import { absoluteUrl, buildPublishedBasePath } from "@/lib/seo";
 
 function initialHeroTaglineLead(project: Project): string {
   const saved = project.content.assets?.heroTaglineLead?.trim();
@@ -90,6 +93,7 @@ function randomTheme(): SiteTheme {
 }
 
 export default function OwnerDashboard({ project }: Props) {
+  const { data: session } = useSession();
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [activeService, setActiveService] = useState<number | null>(null);
@@ -98,6 +102,7 @@ export default function OwnerDashboard({ project }: Props) {
   const [companyName, setCompanyName] = useState(project.intake.companyName);
   const [siteTemplate, setSiteTemplate] = useState<SiteTemplateChoice>(project.intake.siteTemplate ?? "auto");
   const [customDomain, setCustomDomain] = useState(project.intake.customDomain ?? "");
+  const [publicSlug, setPublicSlug] = useState(project.publicSlug ?? "");
   const [phone, setPhone] = useState(project.intake.phone ?? "");
   const [city, setCity] = useState(project.intake.city ?? "");
   const [state, setState] = useState(project.intake.state ?? "");
@@ -201,6 +206,10 @@ export default function OwnerDashboard({ project }: Props) {
   const projectUploadRef = useRef<HTMLInputElement>(null);
 
   const previewUrl = useMemo(() => `/preview/${project.id}`, [project.id]);
+  const customerSiteUrl = useMemo(() => {
+    const path = buildPublishedBasePath({ id: project.id, publicSlug: publicSlug.trim() || undefined });
+    return absoluteUrl(path);
+  }, [project.id, publicSlug]);
 
   async function addHeroFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -275,6 +284,7 @@ export default function OwnerDashboard({ project }: Props) {
             portfolioProjects: projects.map((p) => p.photos),
           },
         },
+        publicSlug: publicSlug.trim(),
       };
       const res = await fetch(`/api/projects/${project.id}`, {
         method: "PATCH",
@@ -283,7 +293,8 @@ export default function OwnerDashboard({ project }: Props) {
       });
       if (!res.ok) {
         if (res.status === 413) throw new Error("Payload too large — use fewer or smaller images.");
-        throw new Error("Failed");
+        const errJson = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(errJson?.error || "Failed");
       }
       setMsg("Saved successfully.");
     } catch (e) {
@@ -304,7 +315,20 @@ export default function OwnerDashboard({ project }: Props) {
             <h1 className="text-2xl font-semibold">Owner Dashboard</h1>
             <p className="text-white/60 text-sm">Click cards to edit. No code needed.</p>
           </div>
-          <a href={previewUrl} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium">Open Preview</a>
+          <div className="flex gap-2 flex-wrap">
+            {session?.user?.isMainAdmin ? (
+              <Link
+                href="/admin"
+                className="px-4 py-2 rounded-lg border border-amber-400/40 text-amber-100 hover:bg-amber-500/10 text-sm font-medium"
+              >
+                All sites
+              </Link>
+            ) : null}
+            <a href={previewUrl} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium">Open Preview</a>
+            <a href={customerSiteUrl} className="px-4 py-2 rounded-lg border border-white/20 hover:bg-white/10 text-sm font-medium">
+              Open public site
+            </a>
+          </div>
         </div>
 
         <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
@@ -330,6 +354,20 @@ export default function OwnerDashboard({ project }: Props) {
             <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
           </div>
           <input className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
+          <div className="space-y-1">
+            <input
+              className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+              value={publicSlug}
+              onChange={(e) => setPublicSlug(e.target.value)}
+              placeholder="Short public URL slug (e.g. bro-plumbing) — empty = long /site/… link"
+            />
+            <p className="text-xs text-white/55">
+              Customer link:{" "}
+              <a href={customerSiteUrl} className="text-sky-400 hover:underline" target="_blank" rel="noreferrer">
+                {customerSiteUrl}
+              </a>
+            </p>
+          </div>
         </section>
 
         <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">

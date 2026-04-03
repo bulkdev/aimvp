@@ -237,7 +237,7 @@ export default function SiteTemplate({ project }: Props) {
       variant === "superService" ? (
         <SuperServiceTradeCards content={content} intake={intake} />
       ) : (
-        <ServicesSection content={content} intake={intake} isPlumbing={variant === "plumbing"} />
+        <ServicesSection content={content} intake={intake} isPlumbing={variant === "plumbing"} linkProject={project} />
       ),
     portfolio: <PortfolioSection content={content} styleVariant={effectiveDesign?.ourWork ?? "cards"} />,
     about:

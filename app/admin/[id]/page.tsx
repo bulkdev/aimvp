@@ -1,4 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, forbidden } from "next/navigation";
+import { auth } from "@/auth";
+import { canAccessProject } from "@/lib/project-access";
 import { getProject } from "@/lib/store";
 import OwnerDashboard from "@/components/admin/OwnerDashboard";
 import type { Metadata } from "next";
@@ -8,9 +10,16 @@ interface Props {
 }
 
 export default async function AdminPage({ params }: Props) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    forbidden();
+  }
   const { id } = await params;
   const project = await getProject(id);
   if (!project) notFound();
+  if (!canAccessProject(project, { id: session.user.id, email: session.user.email || "" })) {
+    forbidden();
+  }
   return <OwnerDashboard project={project} />;
 }
 

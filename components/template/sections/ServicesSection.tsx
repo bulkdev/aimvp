@@ -1,9 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
-import { usePathname } from "next/navigation";
-import type { GeneratedSiteContent } from "@/types";
-import type { IntakeFormData } from "@/types";
+import type { GeneratedSiteContent, IntakeFormData, Project } from "@/types";
 import { buildAreaUrl } from "@/lib/seo";
 import { intakeLocationLine } from "@/lib/location";
 
@@ -11,6 +8,8 @@ interface Props {
   content: GeneratedSiteContent;
   intake?: IntakeFormData;
   isPlumbing?: boolean;
+  /** When set, service-area links use the short `/{publicSlug}` path when configured. */
+  linkProject?: Pick<Project, "id" | "publicSlug">;
 }
 
 const DEFAULT_GROUPS = [
@@ -45,12 +44,7 @@ function nearbyAreas(city?: string): string[] {
   return [clean, `${clean} Downtown`, `${clean} North`, `${clean} South`, "Nearby communities"];
 }
 
-export default function ServicesSection({ content, intake, isPlumbing = false }: Props) {
-  const pathname = usePathname();
-  const publishedSiteId = useMemo(() => {
-    const m = pathname.match(/^\/site\/([^/]+)/);
-    return m?.[1];
-  }, [pathname]);
+export default function ServicesSection({ content, intake, isPlumbing = false, linkProject }: Props) {
   const configuredGroups =
     content.assets?.serviceGroups
       ?.filter((g) => g.title.trim() && g.items.some((item) => item.trim()))
@@ -64,8 +58,8 @@ export default function ServicesSection({ content, intake, isPlumbing = false }:
   const serviceAreas =
     content.assets?.serviceAreas?.map((a) => a.trim()).filter(Boolean) ?? nearbyAreas(intake?.city);
   const areaLinks =
-    publishedSiteId && isPlumbing
-      ? serviceAreas.slice(0, 8).map((area) => ({ label: area, href: buildAreaUrl(publishedSiteId, area) }))
+    linkProject && isPlumbing
+      ? serviceAreas.slice(0, 8).map((area) => ({ label: area, href: buildAreaUrl(linkProject, area) }))
       : [];
 
   return (

@@ -16,7 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const projects = await listProjects();
   for (const project of projects) {
-    const base = buildPublishedBasePath(project.id);
+    const base = buildPublishedBasePath(project);
     items.push({
       url: `${appUrl}${base}`,
       lastModified: new Date(project.updatedAt),
@@ -28,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const s = slugify(service.title);
       if (!s) continue;
       items.push({
-        url: `${appUrl}${buildServiceUrl(project.id, s)}`,
+        url: `${appUrl}${buildServiceUrl(project, s)}`,
         lastModified: new Date(project.updatedAt),
         changeFrequency: "weekly",
         priority: 0.8,
@@ -39,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const a = slugify(area);
       if (!a) continue;
       items.push({
-        url: `${appUrl}${buildAreaUrl(project.id, a)}`,
+        url: `${appUrl}${buildAreaUrl(project, a)}`,
         lastModified: new Date(project.updatedAt),
         changeFrequency: "weekly",
         priority: 0.75,

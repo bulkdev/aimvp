@@ -1,25 +1,23 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import SiteTemplate from "@/components/template/SiteTemplate";
-import { getProject } from "@/lib/store";
-import { absoluteUrl, buildPublishedBasePath, publicPagesEnabled, slugify } from "@/lib/seo";
+import { getProjectByPublicSlug } from "@/lib/store";
+import { absoluteUrl, isReservedPublicSlug, publicPagesEnabled, slugify } from "@/lib/seo";
 import { intakeLocationLine } from "@/lib/location";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
-  params: Promise<{ id: string; service: string }>;
+  params: Promise<{ slug: string; service: string }>;
 }
 
-export default async function ServiceLandingPage({ params }: Props) {
+export default async function SlugServiceLandingPage({ params }: Props) {
   if (!publicPagesEnabled()) notFound();
-  const { id, service } = await params;
-  const project = await getProject(id);
+  const { slug, service } = await params;
+  if (isReservedPublicSlug(slug)) notFound();
+  const project = await getProjectByPublicSlug(slug);
   if (!project) notFound();
-  if (project.publicSlug?.trim()) {
-    redirect(`${buildPublishedBasePath(project)}/services/${service}`);
-  }
   const serviceItem = project.content.services.find((s) => slugify(s.title) === service) || project.content.services[0];
   if (!serviceItem) notFound();
   const locationLine = intakeLocationLine(project.intake);
@@ -47,8 +45,9 @@ export default async function ServiceLandingPage({ params }: Props) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id, service } = await params;
-  const project = await getProject(id);
+  const { slug, service } = await params;
+  if (isReservedPublicSlug(slug)) return {};
+  const project = await getProjectByPublicSlug(slug);
   if (!project) return {};
   const serviceItem = project.content.services.find((s) => slugify(s.title) === service) || project.content.services[0];
   if (!serviceItem) return {};
@@ -57,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `${serviceItem.title} in ${locationLine} | ${project.content.brandName}`
     : `${serviceItem.title} | ${project.content.brandName}`;
   const description = `${project.content.brandName} provides ${serviceItem.title.toLowerCase()}${locationLine ? ` in ${locationLine}` : ""}. Licensed team, transparent pricing, and quick scheduling.`;
-  const canonical = absoluteUrl(`${buildPublishedBasePath(project)}/services/${service}`);
+  const canonical = absoluteUrl(`/${slug}/services/${service}`);
   return {
     title,
     description,

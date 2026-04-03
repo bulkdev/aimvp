@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "^15.5.14",
+    "next-auth": "^5.0.0-beta.30",
     "openai": "^4.77.0",
     "postcss": "^8",
     "react": "^19.0.0",

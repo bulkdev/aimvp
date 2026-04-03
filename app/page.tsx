@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 import IntakeForm from "@/components/form/IntakeForm";
 import type { IntakeFormData } from "@/types";
 
 export default function HomePage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,11 +22,15 @@ export default function HomePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ intake: data }),
+        credentials: "include",
       });
 
       const json = await res.json();
 
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error(json.error || "Please sign in to generate a site.");
+        }
         throw new Error(json.error || "Generation failed.");
       }
 
@@ -45,7 +52,7 @@ export default function HomePage() {
 
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Header */}
-        <header className="px-6 py-6 flex items-center justify-between border-b border-white/10">
+        <header className="px-6 py-6 flex items-center justify-between border-b border-white/10 gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
@@ -57,14 +64,42 @@ export default function HomePage() {
             </span>
           </div>
 
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white/40 hover:text-white/70 text-sm transition-colors"
-          >
-            Docs
-          </a>
+          <div className="flex items-center gap-3 text-sm">
+            {status === "loading" ? (
+              <span className="text-white/35">…</span>
+            ) : session?.user ? (
+              <>
+                <span className="text-white/50 hidden sm:inline truncate max-w-[200px]">{session.user.email}</span>
+                {session.user.isMainAdmin ? (
+                  <Link
+                    href="/admin"
+                    className="text-amber-200/95 hover:text-amber-100 border border-amber-400/35 rounded-lg px-3 py-1.5 text-sm font-medium"
+                  >
+                    Admin
+                  </Link>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="text-white/70 hover:text-white border border-white/15 rounded-lg px-3 py-1.5"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="text-white/70 hover:text-white">
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  className="text-white bg-indigo-600/90 hover:bg-indigo-500 rounded-lg px-3 py-1.5 font-medium"
+                >
+                  Create account
+                </Link>
+              </>
+            )}
+          </div>
         </header>
 
         {/* Hero copy */}
@@ -85,6 +120,11 @@ export default function HomePage() {
           <p className="text-white/60 text-lg md:text-xl leading-relaxed max-w-2xl mx-auto">
             Enter your business details below. Our AI writes the copy, structures the layout, and delivers a ready-to-publish website draft — in seconds.
           </p>
+          {status !== "loading" && !session && (
+            <p className="mt-4 text-amber-200/90 text-sm max-w-xl mx-auto">
+              Sign in or create an account to generate sites — each site is tied to your account for a secure owner dashboard.
+            </p>
+          )}
         </section>
 
         {/* Form card */}

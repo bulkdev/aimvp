@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { listProjects } from "@/lib/store";
 import { appBaseUrl, publicPagesEnabled } from "@/lib/seo";
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
   const projects = await listProjects();
   const base = appBaseUrl();
   const checks = {

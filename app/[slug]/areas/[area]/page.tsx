@@ -1,25 +1,23 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import SiteTemplate from "@/components/template/SiteTemplate";
-import { getProject } from "@/lib/store";
-import { absoluteUrl, buildPublishedBasePath, publicPagesEnabled, slugify } from "@/lib/seo";
+import { getProjectByPublicSlug } from "@/lib/store";
+import { absoluteUrl, isReservedPublicSlug, publicPagesEnabled, slugify } from "@/lib/seo";
 import { formatAreaWithState, intakeLocationLine } from "@/lib/location";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface Props {
-  params: Promise<{ id: string; area: string }>;
+  params: Promise<{ slug: string; area: string }>;
 }
 
-export default async function AreaLandingPage({ params }: Props) {
+export default async function SlugAreaLandingPage({ params }: Props) {
   if (!publicPagesEnabled()) notFound();
-  const { id, area } = await params;
-  const project = await getProject(id);
+  const { slug, area } = await params;
+  if (isReservedPublicSlug(slug)) notFound();
+  const project = await getProjectByPublicSlug(slug);
   if (!project) notFound();
-  if (project.publicSlug?.trim()) {
-    redirect(`${buildPublishedBasePath(project)}/areas/${area}`);
-  }
   const serviceAreas = project.content.assets?.serviceAreas ?? [];
   const matched = serviceAreas.find((a) => slugify(a) === area);
   const areaName = matched
@@ -49,8 +47,9 @@ export default async function AreaLandingPage({ params }: Props) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id, area } = await params;
-  const project = await getProject(id);
+  const { slug, area } = await params;
+  if (isReservedPublicSlug(slug)) return {};
+  const project = await getProjectByPublicSlug(slug);
   if (!project) return {};
   const serviceAreas = project.content.assets?.serviceAreas ?? [];
   const matched = serviceAreas.find((a) => slugify(a) === area);
@@ -61,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const primaryService = project.content.services[0]?.title || "Plumbing Services";
   const title = `${primaryService} in ${areaName} | ${project.content.brandName}`;
   const description = `${project.content.brandName} provides ${primaryService.toLowerCase()} in ${areaName}. Fast response, quality workmanship, and trusted local service.`;
-  const canonical = absoluteUrl(`${buildPublishedBasePath(project)}/areas/${area}`);
+  const canonical = absoluteUrl(`/${slug}/areas/${area}`);
   return {
     title,
     description,

@@ -145,6 +145,10 @@ export interface Project {
   intake: IntakeFormData;
   content: GeneratedSiteContent;
   status: "draft" | "published";
+  /** Short public path segment: `/{publicSlug}` instead of `/site/{uuid}`. Lowercase, hyphenated, unique. */
+  publicSlug?: string;
+  /** Set when the project is created by a logged-in user; gates admin/API access. */
+  ownerId?: string;
 }
 
 // ─── API Payloads ────────────────────────────────────────────────────────────

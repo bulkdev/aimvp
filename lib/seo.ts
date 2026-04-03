@@ -1,4 +1,4 @@
-import type { IntakeFormData } from "@/types";
+import type { IntakeFormData, Project } from "@/types";
 import { intakeAddressParts } from "@/lib/location";
 
 export function slugify(value: string): string {
@@ -10,6 +10,43 @@ export function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/** Single path segment reserved for system routes — cannot be a customer `publicSlug`. */
+export const RESERVED_PUBLIC_URL_SLUGS = new Set([
+  "admin",
+  "api",
+  "preview",
+  "site",
+  "p",
+  "www",
+  "favicon.ico",
+  "robots",
+  "sitemap",
+  "manifest",
+  "opengraph-image",
+  "twitter-image",
+  "icon",
+  "_next",
+  "static",
+]);
+
+export function normalizePublicSlug(input: string): string {
+  return slugify(input.trim());
+}
+
+export function isReservedPublicSlug(slug: string): boolean {
+  const s = slug.trim().toLowerCase();
+  if (!s || s.includes(".")) return true;
+  return RESERVED_PUBLIC_URL_SLUGS.has(s);
+}
+
+/** Whether `slug` is allowed as `project.publicSlug` (non-empty, not reserved, safe characters). */
+export function isValidCustomerPublicSlug(slug: string): boolean {
+  const n = normalizePublicSlug(slug);
+  if (n.length < 2 || n.length > 80) return false;
+  if (isReservedPublicSlug(n)) return false;
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(n);
+}
+
 export function appBaseUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }
@@ -19,16 +56,19 @@ export function publicPagesEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ENABLE_PUBLIC_PAGES !== "false";
 }
 
-export function buildPublishedBasePath(projectId: string): string {
-  return `/site/${projectId}`;
+/** Published site base path: `/{publicSlug}` when set, otherwise `/site/{id}`. */
+export function buildPublishedBasePath(project: Pick<Project, "id" | "publicSlug">): string {
+  const slug = project.publicSlug?.trim();
+  if (slug) return `/${slug}`;
+  return `/site/${project.id}`;
 }
 
-export function buildServiceUrl(projectId: string, serviceName: string): string {
-  return `${buildPublishedBasePath(projectId)}/services/${slugify(serviceName)}`;
+export function buildServiceUrl(project: Pick<Project, "id" | "publicSlug">, serviceName: string): string {
+  return `${buildPublishedBasePath(project)}/services/${slugify(serviceName)}`;
 }
 
-export function buildAreaUrl(projectId: string, areaName: string): string {
-  return `${buildPublishedBasePath(projectId)}/areas/${slugify(areaName)}`;
+export function buildAreaUrl(project: Pick<Project, "id" | "publicSlug">, areaName: string): string {
+  return `${buildPublishedBasePath(project)}/areas/${slugify(areaName)}`;
 }
 
 export function absoluteUrl(pathname: string): string {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { generateSiteContent } from "@/lib/generator";
 import { createProject } from "@/lib/store";
 import type { GenerateRequest, GenerateResponse, ApiError } from "@/types";
@@ -7,6 +8,14 @@ export const maxDuration = 60; // allow up to 60s for OpenAI calls
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json<ApiError>(
+        { error: "Sign in required to generate a site." },
+        { status: 401 }
+      );
+    }
+
     const body = (await req.json()) as GenerateRequest;
 
     // Basic validation
@@ -26,8 +35,8 @@ export async function POST(req: NextRequest) {
     // Generate content (mock or real AI)
     const content = await generateSiteContent(body.intake);
 
-    // Persist project
-    const project = await createProject(body.intake, content);
+    // Persist project (owned by signed-in user)
+    const project = await createProject(body.intake, content, { ownerId: session.user.id });
 
     return NextResponse.json<GenerateResponse>({
       projectId: project.id,
