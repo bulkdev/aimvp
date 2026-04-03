@@ -24,16 +24,25 @@ type ParsedImport =
   | { kind: "full"; project: Project }
   | { kind: "split"; core: Project; blobsFile: ProjectBlobsFile };
 
+/** Same as single-file import: allow `{ project: { … } }` or raw project at root. */
+function unwrapProjectPayload(parsed: unknown): unknown {
+  if (parsed && typeof parsed === "object" && "project" in parsed && !Array.isArray(parsed)) {
+    const inner = (parsed as { project?: unknown }).project;
+    return inner ?? parsed;
+  }
+  return parsed;
+}
+
 async function parseImportFiles(files: File[]): Promise<ParsedImport> {
   if (files.length === 1) {
     const text = await files[0].text();
     const parsed = JSON.parse(text) as unknown;
-    const raw = (parsed as { project?: unknown }).project ?? parsed;
+    const raw = unwrapProjectPayload(parsed);
     return { kind: "full", project: raw as Project };
   }
   if (files.length === 2) {
     const texts = await Promise.all(files.map((f) => f.text()));
-    const parsed = texts.map((t) => JSON.parse(t) as unknown);
+    const parsed = texts.map((t) => unwrapProjectPayload(JSON.parse(t) as unknown));
     let core: Project | null = null;
     let blobsFile: ProjectBlobsFile | null = null;
     for (const p of parsed) {
@@ -64,7 +73,7 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
     setMsg(null);
     setBusy("export");
     try {
-      const res = await fetch(`/api/projects/${projectId}`);
+      const res = await fetch(`/api/projects/${projectId}`, { credentials: "include" });
       const data = await readResponseJson<{ project?: unknown; error?: string }>(res);
       if (!res.ok) throw new Error(data.error || "Could not load project.");
       const project = data.project as Project;
@@ -91,11 +100,13 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
   }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const list = e.target.files;
-    e.target.value = "";
-    if (!list?.length) return;
-    const files = Array.from(list);
-    setMsg(null);
+    const input = e.target;
+    const files = input.files?.length ? Array.from(input.files) : [];
+    if (files.length === 0) {
+      setMsg({ kind: "err", text: "No files selected." });
+      return;
+    }
+    setMsg({ kind: "ok", text: `Reading ${files.length} file(s)…` });
     setBusy("import");
     try {
       const parsed = await parseImportFiles(files);
@@ -109,6 +120,7 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
         const project = await compressImportedProject(parsed.project);
         const res = await fetch("/api/projects/import", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ project }),
         });
@@ -130,6 +142,7 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
 
       const importRes = await fetch("/api/projects/import", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ project: core }),
       });
@@ -164,6 +177,7 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
 
         const mergeRes = await fetch(`/api/projects/${encodeURIComponent(pid)}/merge-blobs`, {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ startIndex: start, blobs: chunk }),
         });
@@ -187,6 +201,9 @@ export default function ProjectBackupBar({ projectId }: { projectId: string }) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Invalid JSON or import failed." });
     } finally {
       setBusy(null);
+      // Reset after reads finish so the same files can be chosen again; avoids clearing before
+      // snapshot (live FileList) and avoids any browser quirks with stale input state.
+      input.value = "";
     }
   }
 
