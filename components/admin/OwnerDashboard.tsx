@@ -12,7 +12,7 @@ function initialHeroTaglineLead(project: Project): string {
   const parts = project.content.tagline.split("·").map((p) => p.trim()).filter(Boolean);
   return parts.length > 1 ? parts.slice(0, -1).join(" · ") : parts[0] || "";
 }
-import { fileToCompressedDataUrl } from "@/lib/clientImage";
+import { fileToCompressedDataUrl, fileToFaviconDataUrl } from "@/lib/clientImage";
 
 interface Props {
   project: Project;
@@ -204,6 +204,9 @@ export default function OwnerDashboard({ project }: Props) {
   const heroUploadRef = useRef<HTMLInputElement>(null);
   const serviceUploadRef = useRef<HTMLInputElement>(null);
   const projectUploadRef = useRef<HTMLInputElement>(null);
+  const faviconUploadRef = useRef<HTMLInputElement>(null);
+
+  const [faviconDataUrl, setFaviconDataUrl] = useState(project.content.assets?.faviconDataUrl ?? "");
 
   const previewUrl = useMemo(() => `/preview/${project.id}`, [project.id]);
   const customerSiteUrl = useMemo(() => {
@@ -233,6 +236,8 @@ export default function OwnerDashboard({ project }: Props) {
     setSaving(true);
     setMsg("");
     try {
+      const { faviconDataUrl: _prevFav, ...assetRest } = project.content.assets ?? {};
+      void _prevFav;
       const payload = {
         intake: { ...project.intake, companyName, siteTemplate, customDomain, phone, city, state, email, address },
         content: {
@@ -242,7 +247,7 @@ export default function OwnerDashboard({ project }: Props) {
           services,
           hero: { ...project.content.hero, title: heroTitle, subtitle: heroSubtitle },
           assets: {
-            ...project.content.assets,
+            ...assetRest,
             heroTaglineLead: heroTaglineLead.trim(),
             heroSlides,
             serviceCardImages: serviceImages,
@@ -282,6 +287,7 @@ export default function OwnerDashboard({ project }: Props) {
               .filter(Boolean),
             portfolioEntries: projects,
             portfolioProjects: projects.map((p) => p.photos),
+            ...(faviconDataUrl.trim() ? { faviconDataUrl: faviconDataUrl.trim() } : {}),
           },
         },
         publicSlug: publicSlug.trim(),
@@ -367,6 +373,59 @@ export default function OwnerDashboard({ project }: Props) {
                 {customerSiteUrl}
               </a>
             </p>
+          </div>
+        </section>
+
+        <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+          <h2 className="text-sm font-medium">Site favicon (browser tab)</h2>
+          <p className="text-xs text-white/50">
+            Shown on preview, public URL, and service area pages. PNG, JPG, SVG, or ICO — kept small for fast loads.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {faviconDataUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={faviconDataUrl} alt="" className="w-12 h-12 rounded object-contain bg-white border border-white/10" />
+                <button
+                  type="button"
+                  onClick={() => faviconUploadRef.current?.click()}
+                  className="px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-xs"
+                >
+                  Replace
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFaviconDataUrl("")}
+                  className="px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-xs text-rose-300"
+                >
+                  Remove
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => faviconUploadRef.current?.click()}
+                className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs"
+              >
+                Upload favicon
+              </button>
+            )}
+            <input
+              ref={faviconUploadRef}
+              type="file"
+              accept="image/*,.ico"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                try {
+                  setFaviconDataUrl(await fileToFaviconDataUrl(f));
+                } catch (err) {
+                  setMsg(err instanceof Error ? err.message : "Invalid favicon file.");
+                }
+                e.target.value = "";
+              }}
+            />
           </div>
         </section>
 

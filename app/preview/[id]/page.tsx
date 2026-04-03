@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { getProject } from "@/lib/store";
 import { intakeLocationLine } from "@/lib/location";
 import PreviewShell from "@/components/preview/PreviewShell";
+import { siteFaviconIcons } from "@/lib/favicon-metadata";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -18,7 +20,7 @@ export default async function PreviewPage({ params }: Props) {
   return <PreviewShell project={project} />;
 }
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const project = await getProject(id);
   const rawDomain = project?.intake?.customDomain?.trim() || "";
@@ -70,5 +72,6 @@ export async function generateMetadata({ params }: Props) {
       description: seoDescription,
       images: ogImage ? [ogImage] : undefined,
     },
+    ...(siteFaviconIcons(project ?? undefined) ?? {}),
   };
 }

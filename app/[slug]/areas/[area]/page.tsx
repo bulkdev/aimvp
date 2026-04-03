@@ -4,6 +4,7 @@ import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProjectByPublicSlug } from "@/lib/store";
 import { absoluteUrl, isReservedPublicSlug, publicPagesEnabled, slugify } from "@/lib/seo";
 import { formatAreaWithState, intakeLocationLine } from "@/lib/location";
+import { siteFaviconIcons } from "@/lib/favicon-metadata";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -67,5 +68,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: { canonical },
     openGraph: { title, description, type: "website", url: canonical },
     twitter: { card: "summary_large_image", title, description },
+    ...(siteFaviconIcons(project) ?? {}),
   };
 }

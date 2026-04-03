@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { ShowcaseSite } from "@/lib/showcase-portfolio";
+import { fileToFaviconDataUrl } from "@/lib/clientImage";
 
 type SiteRow = {
   id: string;
@@ -36,17 +37,29 @@ export default function MainAdminDashboard() {
   const [portfolioSaveErr, setPortfolioSaveErr] = useState<string | null>(null);
   const [portfolioSaving, setPortfolioSaving] = useState(false);
 
+  const [landingFavicon, setLandingFavicon] = useState<string | null>(null);
+  const [landingFaviconSaving, setLandingFaviconSaving] = useState(false);
+  const [landingFaviconMsg, setLandingFaviconMsg] = useState<string | null>(null);
+  const [landingFaviconErr, setLandingFaviconErr] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoadError(null);
     setPortfolioErr(null);
     setLoading(true);
     try {
-      const [sitesRes, showcaseRes] = await Promise.all([
+      const [sitesRes, showcaseRes, brandingRes] = await Promise.all([
         fetch("/api/admin/sites", { credentials: "include" }),
         fetch("/api/admin/showcase", { credentials: "include" }),
+        fetch("/api/admin/landing-branding", { credentials: "include" }),
       ]);
       const sitesData = await sitesRes.json();
       const showcaseData = await showcaseRes.json();
+      if (brandingRes.ok) {
+        const b = await brandingRes.json();
+        setLandingFavicon(typeof b.branding?.faviconDataUrl === "string" ? b.branding.faviconDataUrl : null);
+      } else {
+        setLandingFavicon(null);
+      }
       if (!sitesRes.ok) {
         throw new Error(sitesData.error || "Failed to load sites.");
       }
@@ -63,6 +76,32 @@ export default function MainAdminDashboard() {
       setLoading(false);
     }
   }, []);
+
+  async function saveLandingFavicon(next: string | null) {
+    setLandingFaviconSaving(true);
+    setLandingFaviconErr(null);
+    setLandingFaviconMsg(null);
+    try {
+      const res = await fetch("/api/admin/landing-branding", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ faviconDataUrl: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Save failed.");
+      }
+      setLandingFavicon(
+        typeof data.branding?.faviconDataUrl === "string" ? data.branding.faviconDataUrl : null
+      );
+      setLandingFaviconMsg("Favicon saved. Hard-refresh the marketing homepage to see the tab icon.");
+    } catch (e) {
+      setLandingFaviconErr(e instanceof Error ? e.message : "Save failed.");
+    } finally {
+      setLandingFaviconSaving(false);
+    }
+  }
 
   function movePortfolioEntry(index: number, dir: -1 | 1) {
     setPortfolioSites((prev) => {
@@ -191,6 +230,87 @@ export default function MainAdminDashboard() {
         )}
         {dupErr && (
           <div className="p-4 rounded-xl bg-red-500/15 border border-red-400/30 text-red-200 text-sm">{dupErr}</div>
+        )}
+
+        {!loading && (
+          <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Marketing homepage favicon</h2>
+              <p className="text-sm text-white/55 mt-1">
+                Tab icon for the public landing page (<code className="text-white/80">/</code>). PNG, JPG, SVG, or ICO.
+                Shown after save when visitors load the homepage.
+              </p>
+            </div>
+            {landingFaviconErr && (
+              <div className="p-3 rounded-lg bg-red-500/15 border border-red-400/30 text-red-200 text-sm">
+                {landingFaviconErr}
+              </div>
+            )}
+            {landingFaviconMsg && (
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-400/25 text-emerald-100 text-sm">
+                {landingFaviconMsg}
+              </div>
+            )}
+            <div className="flex flex-wrap items-end gap-4">
+              {landingFavicon ? (
+                <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={landingFavicon} alt="" className="w-12 h-12 rounded object-contain bg-white" />
+                  <div className="flex flex-wrap gap-2">
+                    <label className="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm cursor-pointer">
+                      Replace
+                      <input
+                        type="file"
+                        accept="image/*,.ico"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          try {
+                            const url = await fileToFaviconDataUrl(f);
+                            setLandingFavicon(url);
+                            await saveLandingFavicon(url);
+                          } catch (err) {
+                            setLandingFaviconErr(err instanceof Error ? err.message : "Invalid file.");
+                          }
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      disabled={landingFaviconSaving}
+                      onClick={() => void saveLandingFavicon(null)}
+                      className="px-3 py-2 rounded-lg border border-white/20 text-sm hover:bg-white/10 disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm cursor-pointer inline-block">
+                  Upload favicon
+                  <input
+                    type="file"
+                    accept="image/*,.ico"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      try {
+                        const url = await fileToFaviconDataUrl(f);
+                        setLandingFavicon(url);
+                        await saveLandingFavicon(url);
+                      } catch (err) {
+                        setLandingFaviconErr(err instanceof Error ? err.message : "Invalid file.");
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          </section>
         )}
 
         {!loading && (

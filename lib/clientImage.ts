@@ -61,3 +61,36 @@ export async function fileToCompressedDataUrl(
     return readFileAsDataUrl(file);
   }
 }
+
+/** Small PNG/SVG data URL for tab icons (max 64px raster; SVG passes through). */
+export async function fileToFaviconDataUrl(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Choose an image file.");
+  }
+  if (file.type === "image/svg+xml") {
+    return readFileAsDataUrl(file);
+  }
+  try {
+    const bitmap = await createImageBitmap(file);
+    try {
+      const max = 64;
+      let w = bitmap.width;
+      let h = bitmap.height;
+      const scale = max / Math.max(w, h, 1);
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return readFileAsDataUrl(file);
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      return canvas.toDataURL("image/png");
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return readFileAsDataUrl(file);
+  }
+}

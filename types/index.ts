@@ -121,6 +121,8 @@ export interface GeneratedSiteContent {
     }[];
     /** Plumbing hero eyebrow: text before " · {location}" (e.g. Licensed plumbers). Location always follows intake city/state when set. */
     heroTaglineLead?: string;
+    /** Browser tab / bookmark icon (PNG, ICO, or SVG data URL). Set in site admin. */
+    faviconDataUrl?: string;
   };
   theme: SiteTheme;
 }

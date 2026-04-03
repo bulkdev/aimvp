@@ -4,6 +4,7 @@ import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProject } from "@/lib/store";
 import { absoluteUrl, buildPublishedBasePath, publicPagesEnabled } from "@/lib/seo";
 import { intakeLocationLine } from "@/lib/location";
+import { siteFaviconIcons } from "@/lib/favicon-metadata";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -53,5 +54,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       images: ogImage ? [ogImage] : undefined,
     },
+    ...(siteFaviconIcons(project) ?? {}),
   };
 }
