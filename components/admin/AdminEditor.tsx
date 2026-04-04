@@ -28,6 +28,14 @@ import {
 } from "@/lib/portfolioPreview";
 import { readResponseJson } from "@/lib/readResponseJson";
 import { stringifyProjectPatchBody } from "@/lib/compressProjectPayload";
+import type { NavMenuItem } from "@/lib/navbar-menu";
+import {
+  initialNavbarMenuItemsFromProject,
+  navbarMenuFallbackForVariant,
+  NAV_MENU_HASH_OPTIONS,
+  normalizeNavbarMenuItems,
+} from "@/lib/navbar-menu";
+import { resolveSiteVariant } from "@/lib/siteVariant";
 
 interface Props { project: Project; }
 
@@ -250,6 +258,9 @@ export default function AdminEditor({ project }: Props) {
   );
   const [navbarVariant, setNavbarVariant] = useState<"standard" | "split-bar" | "boxed">(
     project.content.assets?.designVariants?.navbar ?? "standard"
+  );
+  const [navbarMenuItems, setNavbarMenuItems] = useState<NavMenuItem[]>(() =>
+    initialNavbarMenuItemsFromProject(project)
   );
   const [heroSlideshowVariant, setHeroSlideshowVariant] = useState<"fade" | "zoom" | "slide">(
     project.content.assets?.designVariants?.heroSlideshow ?? "fade"
@@ -490,6 +501,10 @@ export default function AdminEditor({ project }: Props) {
             })),
             heroParallaxBackgroundUrl: heroParallaxBackgroundUrl.trim() || undefined,
             portfolioHomePreviewCount: clampPortfolioHomePreviewCount(portfolioHomePreviewCount),
+            navbarMenuItems: (() => {
+              const n = normalizeNavbarMenuItems(navbarMenuItems);
+              return n.length > 0 ? n : undefined;
+            })(),
           },
         },
         publicSlug: publicSlug.trim(),
@@ -899,6 +914,116 @@ export default function AdminEditor({ project }: Props) {
             3-column grid, or a single-photo slider (use arrows or keyboard). Extra items link to the full portfolio
             page.
           </p>
+
+          <div className="mt-5 pt-4 border-t border-white/10 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium">Navbar &amp; footer menu links</p>
+              <button
+                type="button"
+                className="text-xs text-sky-300 hover:underline"
+                onClick={() =>
+                  setNavbarMenuItems([
+                    ...navbarMenuFallbackForVariant(
+                      resolveSiteVariant(project.intake.businessDescription, siteTemplate, companyName)
+                    ),
+                  ])
+                }
+              >
+                Reset to template default
+              </button>
+            </div>
+            <p className="text-[11px] text-white/45">
+              Labels for the top navigation and footer quick links. Each row jumps to a section (preview uses #anchors;
+              published sites use SEO URLs where available).
+            </p>
+            <div className="space-y-2">
+              {navbarMenuItems.map((item, idx) => (
+                <div
+                  key={`nav-${idx}-${item.hash}`}
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2"
+                >
+                  <input
+                    type="text"
+                    className="min-w-[120px] flex-1 rounded border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white"
+                    value={item.label}
+                    onChange={(e) =>
+                      setNavbarMenuItems((prev) =>
+                        prev.map((row, i) => (i === idx ? { ...row, label: e.target.value } : row))
+                      )
+                    }
+                    placeholder="Label"
+                  />
+                  <select
+                    className="rounded border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white max-w-[200px]"
+                    value={item.hash}
+                    onChange={(e) =>
+                      setNavbarMenuItems((prev) =>
+                        prev.map((row, i) =>
+                          i === idx ? { ...row, hash: e.target.value as NavMenuItem["hash"] } : row
+                        )
+                      )
+                    }
+                  >
+                    {NAV_MENU_HASH_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value} className="text-slate-900">
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      className="rounded px-2 py-1 text-xs text-white/70 hover:bg-white/10 disabled:opacity-30"
+                      disabled={idx === 0}
+                      onClick={() =>
+                        setNavbarMenuItems((prev) => {
+                          if (idx <= 0) return prev;
+                          const next = [...prev];
+                          [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                          return next;
+                        })
+                      }
+                      aria-label="Move up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded px-2 py-1 text-xs text-white/70 hover:bg-white/10 disabled:opacity-30"
+                      disabled={idx >= navbarMenuItems.length - 1}
+                      onClick={() =>
+                        setNavbarMenuItems((prev) => {
+                          if (idx >= prev.length - 1) return prev;
+                          const next = [...prev];
+                          [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                          return next;
+                        })
+                      }
+                      aria-label="Move down"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded px-2 py-1 text-xs text-rose-300/90 hover:bg-white/10"
+                      onClick={() => setNavbarMenuItems((prev) => prev.filter((_, i) => i !== idx))}
+                    >
+                      Remove
+                    </button>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="text-xs text-sky-300 hover:underline"
+              onClick={() =>
+                setNavbarMenuItems((prev) => [...prev, { label: "Services", hash: "services" }])
+              }
+            >
+              + Add menu link
+            </button>
+          </div>
         </div>
 
         <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">

@@ -2,7 +2,9 @@
 
 import { type CSSProperties, useEffect, useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
-import { publishedNavHref, type NavHash } from "@/lib/published-nav-hrefs";
+import { publishedNavHref } from "@/lib/published-nav-hrefs";
+import { resolveNavbarMenuItems } from "@/lib/navbar-menu";
+import { resolveSiteVariant } from "@/lib/siteVariant";
 
 interface Props {
   content: GeneratedSiteContent;
@@ -11,12 +13,6 @@ interface Props {
   styleVariant?: "standard" | "split-bar" | "boxed";
   /** Live published site: use `/slug/...` URLs instead of in-page anchors. */
   publishedBasePath?: string;
-}
-
-function navHashFromLabel(label: string): NavHash {
-  const k = label.toLowerCase();
-  if (k === "stats") return "stats";
-  return k as NavHash;
 }
 
 function PhoneIcon({ className = "", style }: { className?: string; style?: CSSProperties }) {
@@ -51,7 +47,12 @@ export default function NavbarSection({
 }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const links = ["Services", "Stats", "Work", "About", "FAQ", "Reviews", "Contact"];
+  const variant = resolveSiteVariant(
+    intake.businessDescription ?? "",
+    intake.siteTemplate ?? "auto",
+    intake.companyName ?? ""
+  );
+  const menuItems = resolveNavbarMenuItems(content.assets, variant);
   const cleanedPhone = intake.phone?.replace(/[^\d+]/g, "") || "";
   const hasCallNow = isPlumbing && Boolean(cleanedPhone);
   const phoneIconAttentionStyle: CSSProperties = {
@@ -125,13 +126,13 @@ export default function NavbarSection({
 
   const linksNode = (
     <div className="hidden md:flex items-center gap-6">
-      {links.map((link) => (
+      {menuItems.map((item, idx) => (
         <a
-          key={link}
-          href={publishedNavHref(publishedBasePath, navHashFromLabel(link))}
+          key={`${item.hash}-${idx}`}
+          href={publishedNavHref(publishedBasePath, item.hash)}
           className="text-white/70 hover:text-white text-sm font-medium transition-colors"
         >
-          {link}
+          {item.label}
         </a>
       ))}
     </div>
@@ -335,14 +336,14 @@ export default function NavbarSection({
             </div>
 
             <div className="flex flex-col gap-3">
-              {links.map((link) => (
+              {menuItems.map((item, idx) => (
                 <a
-                  key={link}
-                  href={publishedNavHref(publishedBasePath, navHashFromLabel(link))}
+                  key={`${item.hash}-${idx}`}
+                  href={publishedNavHref(publishedBasePath, item.hash)}
                   className="text-white/85 hover:text-white py-2 text-base"
                   onClick={closeMenu}
                 >
-                  {link}
+                  {item.label}
                 </a>
               ))}
             </div>

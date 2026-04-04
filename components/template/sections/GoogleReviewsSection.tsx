@@ -7,6 +7,30 @@ interface Props {
   content: GeneratedSiteContent;
 }
 
+/** Google brand–adjacent hues (blue / red / green / orange); all work with white initials at ~12px. */
+const GOOGLE_REVIEW_AVATAR_BACKGROUNDS = [
+  "#4285F4",
+  "#1967D2",
+  "#1A73E8",
+  "#669DF6",
+  "#EA4335",
+  "#D93025",
+  "#C5221F",
+  "#34A853",
+  "#137333",
+  "#0D652D",
+  "#F29900",
+  "#E37400",
+] as const;
+
+/** Stable “random” color per reviewer so SSR and duplicated carousel slides match. */
+function googleReviewAvatarBackground(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0;
+  const idx = Math.abs(h) % GOOGLE_REVIEW_AVATAR_BACKGROUNDS.length;
+  return GOOGLE_REVIEW_AVATAR_BACKGROUNDS[idx]!;
+}
+
 const DEFAULT_REVIEWS = [
   {
     reviewerName: "Stacey L.",
@@ -197,6 +221,9 @@ export default function GoogleReviewsSection({ content }: Props) {
               {desktopTrackReviews.map((r, i) => {
                 const rating = Math.max(1, Math.min(5, Math.round(r.rating || 5)));
                 const reviewHref = reviewLinkHref(r.reviewUrl);
+                const avatarBg = googleReviewAvatarBackground(
+                  `${r.reviewerName || ""}|${r.avatarLetter || ""}|${r.reviewAge || ""}`
+                );
                 const headerRow = (
                   <>
                     <div
@@ -204,7 +231,7 @@ export default function GoogleReviewsSection({ content }: Props) {
                         width: "30px",
                         height: "30px",
                         borderRadius: "999px",
-                        background: "var(--accent)",
+                        background: avatarBg,
                         color: "#fff",
                         display: "flex",
                         alignItems: "center",
@@ -347,6 +374,9 @@ export default function GoogleReviewsSection({ content }: Props) {
               >
                 {reviews.map((review, idx) => {
                   const mobileHref = reviewLinkHref(review.reviewUrl);
+                  const mobileAvatarBg = googleReviewAvatarBackground(
+                    `${review.reviewerName || ""}|${review.avatarLetter || ""}|${review.reviewAge || ""}`
+                  );
                   const mobileHeader = (
                     <>
                       <div
@@ -354,7 +384,7 @@ export default function GoogleReviewsSection({ content }: Props) {
                           width: "32px",
                           height: "32px",
                           borderRadius: "999px",
-                          background: "var(--accent)",
+                          background: mobileAvatarBg,
                           color: "#fff",
                           display: "flex",
                           alignItems: "center",

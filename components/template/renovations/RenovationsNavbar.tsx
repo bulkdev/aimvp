@@ -2,16 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
-import { publishedNavHref, type NavHash } from "@/lib/published-nav-hrefs";
-
-const LINKS: { label: string; hash: NavHash }[] = [
-  { hash: "services", label: "Our services" },
-  { hash: "stats", label: "Results" },
-  { hash: "work", label: "Portfolio" },
-  { hash: "about", label: "Our story" },
-  { hash: "faq", label: "FAQ" },
-  { hash: "contact", label: "Contact" },
-];
+import { publishedNavHref } from "@/lib/published-nav-hrefs";
+import { resolveNavbarMenuItems } from "@/lib/navbar-menu";
+import { resolveSiteVariant } from "@/lib/siteVariant";
 
 /** Subway tile — matches hero editorial background */
 export const RENO_TILE_STYLE: CSSProperties = {
@@ -128,6 +121,12 @@ export default function RenovationsNavbar({
   const navLogoUrl = intake.navbarLogoDataUrl?.trim();
   const navLogoH = clampNavLogoHeight(intake.navbarLogoHeightPx);
   const showNavLogoImg = navLogoReady && !!navLogoUrl;
+  const variant = resolveSiteVariant(
+    intake.businessDescription ?? "",
+    intake.siteTemplate ?? "auto",
+    intake.companyName ?? ""
+  );
+  const links = resolveNavbarMenuItems(content.assets, variant);
 
   return (
     <div ref={shellRef} className="fixed left-0 right-0 top-0 z-[60]">
@@ -189,9 +188,9 @@ export default function RenovationsNavbar({
           </a>
 
           <nav className="hidden items-center gap-6 lg:flex xl:gap-8" aria-label="Primary">
-            {LINKS.map((l) => (
+            {links.map((l, idx) => (
               <a
-                key={l.hash}
+                key={`${l.hash}-${idx}`}
                 href={publishedNavHref(publishedBasePath, l.hash)}
                 className="text-[11px] font-semibold uppercase tracking-[0.14em] transition-opacity hover:opacity-70"
                 style={{ color: GREEN }}
@@ -257,9 +256,9 @@ export default function RenovationsNavbar({
             style={{ paddingTop: "var(--reno-header-h, 72px)" }}
           >
             <div className="flex flex-1 flex-col gap-0 overflow-y-auto px-5 py-4">
-              {LINKS.map((l) => (
+              {links.map((l, idx) => (
                 <a
-                  key={l.hash}
+                  key={`${l.hash}-${idx}`}
                   href={publishedNavHref(publishedBasePath, l.hash)}
                   className="border-b border-neutral-200 py-3.5 text-[13px] font-semibold uppercase tracking-[0.12em]"
                   style={{ color: GREEN }}

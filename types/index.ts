@@ -109,6 +109,25 @@ export interface GeneratedSiteContent {
       | "payment"
       | "contact"
     >;
+    /**
+     * Navbar + footer quick links: display label and section anchor.
+     * When unset, the active template uses its built-in default list.
+     */
+    navbarMenuItems?: Array<{
+      label: string;
+      hash:
+        | "hero"
+        | "services"
+        | "stats"
+        | "work"
+        | "about"
+        | "faq"
+        | "reviews"
+        | "contact"
+        | "booking"
+        | "payment"
+        | "cta";
+    }>;
     /** Scrolling stats strip (e.g. projects completed, reviews, BBB, insured). */
     siteStats?: { label: string; value: string }[];
     layoutVariant?: "standard" | "services-first" | "about-first";

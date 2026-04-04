@@ -3,7 +3,9 @@
 import { type FormEvent, useEffect, useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData, ServiceItem } from "@/types";
 import { applyIntakeLocationToCopy, intakeLocationLine } from "@/lib/location";
-import { publishedNavHref, type NavHash } from "@/lib/published-nav-hrefs";
+import { publishedNavHref } from "@/lib/published-nav-hrefs";
+import { resolveNavbarMenuItems } from "@/lib/navbar-menu";
+import { resolveSiteVariant } from "@/lib/siteVariant";
 
 /** Stock imagery — Unsplash License */
 const HERO_SLIDES: { src: string; alt: string }[] = [
@@ -56,15 +58,6 @@ function MenuIcon({ open }: { open: boolean }) {
   );
 }
 
-const NAV_LINKS: { label: string; hash: NavHash }[] = [
-  { label: "Services", hash: "services" },
-  { label: "Stats", hash: "stats" },
-  { label: "About", hash: "about" },
-  { label: "Reviews", hash: "reviews" },
-  { label: "FAQ", hash: "faq" },
-  { label: "Contact", hash: "contact" },
-];
-
 export function SuperServiceNavbar({
   content,
   intake,
@@ -77,6 +70,12 @@ export function SuperServiceNavbar({
   const [open, setOpen] = useState(false);
   const phone = intake.phone?.trim();
   const tel = phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : "";
+  const variant = resolveSiteVariant(
+    intake.businessDescription ?? "",
+    intake.siteTemplate ?? "auto",
+    intake.companyName ?? ""
+  );
+  const navLinks = resolveNavbarMenuItems(content.assets, variant);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -112,9 +111,9 @@ export function SuperServiceNavbar({
         </a>
 
         <nav className="hidden lg:flex items-center gap-8">
-          {NAV_LINKS.map((l) => (
+          {navLinks.map((l, idx) => (
             <a
-              key={l.hash}
+              key={`${l.hash}-${idx}`}
               href={publishedNavHref(publishedBasePath, l.hash)}
               className="text-[15px] font-semibold hover:opacity-80 transition-opacity"
               style={{ color: "var(--primary)" }}
@@ -151,9 +150,9 @@ export function SuperServiceNavbar({
 
       {open && (
         <div className="lg:hidden border-t border-slate-100 bg-white px-4 py-4 flex flex-col gap-1">
-          {NAV_LINKS.map((l) => (
+          {navLinks.map((l, idx) => (
             <a
-              key={l.hash}
+              key={`${l.hash}-${idx}`}
               href={publishedNavHref(publishedBasePath, l.hash)}
               className="py-3 font-semibold border-b border-slate-100"
               style={{ color: "var(--primary)" }}

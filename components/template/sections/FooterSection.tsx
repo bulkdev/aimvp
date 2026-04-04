@@ -1,17 +1,13 @@
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
 import { normalizeNap } from "@/lib/seo";
-import { publishedNavHref, type NavHash } from "@/lib/published-nav-hrefs";
+import { publishedNavHref } from "@/lib/published-nav-hrefs";
+import { resolveNavbarMenuItems } from "@/lib/navbar-menu";
+import { resolveSiteVariant } from "@/lib/siteVariant";
 
 interface Props {
   content: GeneratedSiteContent;
   intake: IntakeFormData;
   publishedBasePath?: string;
-}
-
-function navHashFromLabel(label: string): NavHash {
-  const k = label.toLowerCase();
-  if (k === "stats") return "stats";
-  return k as NavHash;
 }
 
 function SocialIcon({ name }: { name: "Facebook" | "Instagram" | "LinkedIn" | "X" }) {
@@ -48,6 +44,12 @@ function SocialIcon({ name }: { name: "Facebook" | "Instagram" | "LinkedIn" | "X
 export default function FooterSection({ content, intake, publishedBasePath }: Props) {
   const year = new Date().getFullYear();
   const nap = normalizeNap(intake);
+  const variant = resolveSiteVariant(
+    intake.businessDescription ?? "",
+    intake.siteTemplate ?? "auto",
+    intake.companyName ?? ""
+  );
+  const menuItems = resolveNavbarMenuItems(content.assets, variant);
   const socialLinks = content.assets?.socialLinks ?? {};
   const socials = [
     { key: "facebook", label: "Facebook", href: socialLinks.facebook },
@@ -119,13 +121,13 @@ export default function FooterSection({ content, intake, publishedBasePath }: Pr
               Quick Links
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {["Services", "Stats", "Work", "About", "FAQ", "Reviews", "Contact"].map((link) => (
+              {menuItems.map((item, idx) => (
                 <a
-                  key={link}
-                  href={publishedNavHref(publishedBasePath, navHashFromLabel(link))}
+                  key={`${item.hash}-${idx}`}
+                  href={publishedNavHref(publishedBasePath, item.hash)}
                   style={{ color: "rgba(255,255,255,0.5)", fontSize: "14px", textDecoration: "none", transition: "color 0.2s" }}
                 >
-                  {link}
+                  {item.label}
                 </a>
               ))}
             </div>

@@ -2,18 +2,14 @@
 
 import { type CSSProperties, useEffect, useState } from "react";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
-import { publishedNavHref, type NavHash } from "@/lib/published-nav-hrefs";
+import { publishedNavHref } from "@/lib/published-nav-hrefs";
+import { resolveNavbarMenuItems } from "@/lib/navbar-menu";
+import { resolveSiteVariant } from "@/lib/siteVariant";
 
 interface Props {
   content: GeneratedSiteContent;
   intake: IntakeFormData;
   publishedBasePath?: string;
-}
-
-function navHashFromLabel(label: string): NavHash {
-  const k = label.toLowerCase();
-  if (k === "stats") return "stats";
-  return k as NavHash;
 }
 
 function PhoneIcon({ className = "", style }: { className?: string; style?: CSSProperties }) {
@@ -43,7 +39,12 @@ function MenuIcon({ open }: { open: boolean }) {
 export default function PlumbingFlowNavbar({ content, intake, publishedBasePath }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
-  const links = ["Services", "Stats", "Work", "About", "FAQ", "Reviews", "Contact"];
+  const variant = resolveSiteVariant(
+    intake.businessDescription ?? "",
+    intake.siteTemplate ?? "auto",
+    intake.companyName ?? ""
+  );
+  const menuItems = resolveNavbarMenuItems(content.assets, variant);
   const cleanedPhone = intake.phone?.replace(/[^\d+]/g, "") || "";
   const hasCallNow = Boolean(cleanedPhone);
 
@@ -102,13 +103,13 @@ export default function PlumbingFlowNavbar({ content, intake, publishedBasePath 
 
   const linksNode = (
     <div className="hidden lg:flex items-center gap-5">
-      {links.map((link) => (
+      {menuItems.map((item, idx) => (
         <a
-          key={link}
-          href={publishedNavHref(publishedBasePath, navHashFromLabel(link))}
+          key={`${item.hash}-${idx}`}
+          href={publishedNavHref(publishedBasePath, item.hash)}
           className="text-white/75 hover:text-white text-sm font-medium transition-colors no-underline"
         >
-          {link}
+          {item.label}
         </a>
       ))}
     </div>
@@ -200,14 +201,14 @@ export default function PlumbingFlowNavbar({ content, intake, publishedBasePath 
               </button>
             </div>
             <nav className="flex flex-col gap-1">
-              {links.map((link) => (
+              {menuItems.map((item, idx) => (
                 <a
-                  key={link}
-                  href={`#${link.toLowerCase()}`}
+                  key={`${item.hash}-${idx}`}
+                  href={publishedNavHref(publishedBasePath, item.hash)}
                   className="text-white/90 py-3 border-b border-white/10 no-underline font-medium"
                   onClick={closeMenu}
                 >
-                  {link}
+                  {item.label}
                 </a>
               ))}
             </nav>

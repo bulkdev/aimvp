@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       notes.push("Google returned no reviews for this listing (new listings or restricted reviews).");
     } else {
       notes.push(
-        `Google Places API returns at most ${GOOGLE_PLACES_MAX_REVIEWS_PER_REQUEST} reviews per place, with no pagination or “next batch”—add more reviews manually in the editor if needed.`
+        `Google Places API returns at most ${GOOGLE_PLACES_MAX_REVIEWS_PER_REQUEST} reviews per place, with no pagination or “next batch”—add more reviews manually in the editor if needed. Imported reviews are sorted newest first when Google includes publish times.`
       );
     }
 

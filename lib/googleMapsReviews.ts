@@ -61,6 +61,8 @@ export function extractPlaceQueryFromPath(urlStr: string): string | null {
 type PlacesReview = {
   rating?: number;
   text?: { text?: string };
+  /** RFC 3339 — used to sort newest first (API does not offer a sort query param). */
+  publishTime?: string;
   relativePublishTimeDescription?: string;
   authorAttribution?: { displayName?: string; uri?: string };
 };
@@ -71,6 +73,20 @@ type PlaceDetailsJson = {
   googleMapsUri?: string;
   reviews?: PlacesReview[];
 };
+
+/** Newest first when `publishTime` is present; stable order otherwise. */
+function sortReviewsNewestFirst(reviews: PlacesReview[]): PlacesReview[] {
+  return [...reviews].sort((a, b) => {
+    const ta = a.publishTime ? Date.parse(a.publishTime) : NaN;
+    const tb = b.publishTime ? Date.parse(b.publishTime) : NaN;
+    const aOk = Number.isFinite(ta);
+    const bOk = Number.isFinite(tb);
+    if (aOk && bOk) return tb - ta;
+    if (aOk && !bOk) return -1;
+    if (!aOk && bOk) return 1;
+    return 0;
+  });
+}
 
 function mapReview(r: PlacesReview, fallbackMapsUri: string): ImportedManualReview {
   const name = r.authorAttribution?.displayName?.trim() || "Google user";
@@ -97,6 +113,7 @@ export async function fetchPlaceReviewsByPlaceId(
   const res = await fetch(url, {
     headers: {
       "X-Goog-Api-Key": apiKey,
+      /** `reviews` includes `publishTime` (RFC 3339) for sorting — Places `get` has no server-side sort param. */
       "X-Goog-FieldMask": "id,displayName,googleMapsUri,reviews",
     },
   });
@@ -107,7 +124,8 @@ export async function fetchPlaceReviewsByPlaceId(
   }
   const mapsUri = raw.googleMapsUri?.trim() || `https://www.google.com/maps/search/?api=1&query_place_id=${encodeURIComponent(placeId)}`;
   const label = raw.displayName?.text?.trim() || "Business";
-  const list = (raw.reviews || []).map((r) => mapReview(r, mapsUri));
+  const ordered = sortReviewsNewestFirst(raw.reviews || []);
+  const list = ordered.map((r) => mapReview(r, mapsUri));
   return { placeName: label, googleMapsUri: mapsUri, reviews: list };
 }
 
