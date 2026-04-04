@@ -2,9 +2,14 @@
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import Cropper, { type Area, type MediaSize, type Size } from "react-easy-crop";
-import { getCroppedImageDataUrl } from "@/lib/cropImage";
+import {
+  getCroppedImageDataUrl,
+  loadImage,
+  percentCropToPixelRect,
+  rasterDataUrlToScaledPng,
+} from "@/lib/cropImage";
 import { getCroppedAreaPixelsForExport } from "@/lib/reactEasyCropExport";
-import { fileToCompressedDataUrl } from "@/lib/clientImage";
+import { fileToCompressedDataUrl, fileToRawDataUrl, getDataUrlNaturalSize } from "@/lib/clientImage";
 
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 
@@ -20,7 +25,8 @@ const ASPECT_PRESETS: { label: string; value: number | undefined }[] = [
   { label: "3:2", value: 3 / 2 },
 ];
 
-const MIN_ZOOM = 0.12;
+/** Low floor so wide wordmarks can fit fully when defaulting to whole bitmap. */
+const MIN_ZOOM = 0.01;
 const MAX_ZOOM = 4;
 
 function isSvgDataUrl(url: string): boolean {
@@ -50,21 +56,28 @@ export default function SiteLogoEditor({
   brandLabel = "Business",
   onError,
   heading = "Site logo (navbar & footer)",
-  description = "Upload a new image and crop it, or crop the current logo. Logos are saved as PNG (max ~640px) to keep saves fast.",
+  description = "Upload saves the whole image (scaled, max ~640px). Use “Crop…” only if you want to trim.",
 }: Props) {
+  /** `full` = entire file, no modal. `crop` = open react-easy-crop. */
+  const uploadModeRef = useRef<"full" | "crop">("full");
   const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  /** Whole bitmap in natural pixels — passed to react-easy-crop as the default selection. */
+  const [initialCroppedAreaPixels, setInitialCroppedAreaPixels] = useState<Area | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [aspect, setAspect] = useState<number | undefined>(undefined);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-  /** Fallback only — Apply uses getCroppedAreaPixelsForExport + sync refs (avoids stale crop×zoom from callbacks). */
+  /** First arg to `onCropAreaChange` — percentages; export must use this (library pixel area is aspect-clamped). */
+  const croppedPercentagesRef = useRef<Area | null>(null);
   const croppedPixelsRef = useRef<Area | null>(null);
   const mediaSizeRef = useRef<MediaSize | null>(null);
   const cropSizeRef = useRef<Size | null>(null);
   const cropSyncRef = useRef({ x: 0, y: 0 });
   const zoomSyncRef = useRef(1);
+  /** Same instance as `<Cropper />` — `getCropData()` is the source of truth for export pixels. */
+  const cropperRef = useRef<InstanceType<typeof Cropper> | null>(null);
   const [busy, setBusy] = useState(false);
   /** Measured crop frame — `aspect={undefined}` would fall back to react-easy-crop default 4/3, breaking "Free". */
   const cropContainerRef = useRef<HTMLDivElement>(null);
@@ -94,9 +107,10 @@ export default function SiteLogoEditor({
     zoomSyncRef.current = zoom;
   }, [crop, zoom]);
 
-  const syncCropPixels = useCallback((_area: Area, pixels: Area) => {
-    croppedPixelsRef.current = pixels;
-    setCroppedAreaPixels(pixels);
+  const syncCropPixels = useCallback((croppedAreaPercentages: Area, croppedAreaPixels: Area) => {
+    croppedPercentagesRef.current = croppedAreaPercentages;
+    croppedPixelsRef.current = croppedAreaPixels;
+    setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
   const handleCropChange = useCallback((next: { x: number; y: number }) => {
@@ -112,9 +126,11 @@ export default function SiteLogoEditor({
   const closeModal = useCallback(() => {
     setOpen(false);
     setImageSrc(null);
+    setInitialCroppedAreaPixels(null);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setCroppedAreaPixels(null);
+    croppedPercentagesRef.current = null;
     croppedPixelsRef.current = null;
     mediaSizeRef.current = null;
     cropSizeRef.current = null;
@@ -124,25 +140,38 @@ export default function SiteLogoEditor({
 
   const applyCrop = useCallback(async () => {
     if (!imageSrc) return;
-    const ms = mediaSizeRef.current;
-    const cs = cropSizeRef.current;
-    let pixels: Area | null = null;
-    if (ms && cs) {
-      /** Same `aspect` as Cropper `getAspect()` when `cropSize` isn’t passed: props.aspect (not cropSize ratio). */
-      pixels = getCroppedAreaPixelsForExport(
-        cropSyncRef.current,
-        ms,
-        cs,
-        cropperAspect,
-        zoomSyncRef.current,
-        0,
-        true
-      );
-    }
-    if (!pixels) pixels = croppedPixelsRef.current ?? croppedAreaPixels;
-    if (!pixels) return;
     setBusy(true);
     try {
+      const image = await loadImage(imageSrc);
+      const nw = image.naturalWidth;
+      const nh = image.naturalHeight;
+      const pct = croppedPercentagesRef.current;
+      let pixels: Area | null = null;
+      if (pct) {
+        pixels = percentCropToPixelRect(pct, nw, nh);
+        pixels.x = Math.max(0, Math.min(pixels.x, nw - 1));
+        pixels.y = Math.max(0, Math.min(pixels.y, nh - 1));
+        pixels.width = Math.max(1, Math.min(pixels.width, nw - pixels.x));
+        pixels.height = Math.max(1, Math.min(pixels.height, nh - pixels.y));
+      } else {
+        const ms = mediaSizeRef.current;
+        const cs = cropSizeRef.current;
+        const exportAspect = cs && cs.height > 0 ? cs.width / cs.height : cropperAspect;
+        pixels = cropperRef.current?.getCropData()?.croppedAreaPixels ?? null;
+        if (!pixels && ms && cs) {
+          pixels = getCroppedAreaPixelsForExport(
+            cropSyncRef.current,
+            ms,
+            cs,
+            exportAspect,
+            zoomSyncRef.current,
+            0,
+            true
+          );
+        }
+        if (!pixels) pixels = croppedPixelsRef.current ?? croppedAreaPixels;
+      }
+      if (!pixels) return;
       const dataUrl = await getCroppedImageDataUrl(imageSrc, pixels, {
         maxEdge: 640,
         mimeType: "image/png",
@@ -170,12 +199,16 @@ export default function SiteLogoEditor({
       onChange(raw);
       return;
     }
-    const dataUrl = await fileToCompressedDataUrl(file, { maxEdge: 2400, quality: 0.9 });
+    // Raw data URL: no JPEG round-trip before cropping (keeps natural size + alpha; matches getCropData pixels).
+    const dataUrl = await fileToRawDataUrl(file);
+    const { width, height } = await getDataUrlNaturalSize(dataUrl);
+    setInitialCroppedAreaPixels({ x: 0, y: 0, width, height });
     setImageSrc(dataUrl);
     setAspect(undefined);
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setCroppedAreaPixels(null);
+    croppedPercentagesRef.current = null;
     croppedPixelsRef.current = null;
     mediaSizeRef.current = null;
     cropSizeRef.current = null;
@@ -184,23 +217,49 @@ export default function SiteLogoEditor({
     setOpen(true);
   }
 
-  function openCropExisting() {
+  async function uploadFullLogo(file: File) {
+    if (file.size > MAX_FILE_BYTES) {
+      onError?.("Logo must be under 4MB.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      onError?.("Choose an image file.");
+      return;
+    }
+    if (file.type === "image/svg+xml") {
+      const raw = await fileToCompressedDataUrl(file);
+      onChange(raw);
+      return;
+    }
+    const dataUrl = await fileToRawDataUrl(file);
+    const out = await rasterDataUrlToScaledPng(dataUrl, 640);
+    onChange(out);
+  }
+
+  async function openCropExisting() {
     if (!value?.trim()) return;
     if (isSvgDataUrl(value)) {
       onError?.("SVG logos can’t be cropped here — upload a PNG or JPG to crop, or replace the file.");
       return;
     }
-    setImageSrc(value);
-    setAspect(undefined);
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
-    setCroppedAreaPixels(null);
-    croppedPixelsRef.current = null;
-    mediaSizeRef.current = null;
-    cropSizeRef.current = null;
-    cropSyncRef.current = { x: 0, y: 0 };
-    zoomSyncRef.current = 1;
-    setOpen(true);
+    try {
+      const { width, height } = await getDataUrlNaturalSize(value);
+      setInitialCroppedAreaPixels({ x: 0, y: 0, width, height });
+      setImageSrc(value);
+      setAspect(undefined);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+      croppedPercentagesRef.current = null;
+      croppedPixelsRef.current = null;
+      mediaSizeRef.current = null;
+      cropSizeRef.current = null;
+      cropSyncRef.current = { x: 0, y: 0 };
+      zoomSyncRef.current = 1;
+      setOpen(true);
+    } catch {
+      onError?.("Could not read the logo image.");
+    }
   }
 
   return (
@@ -228,15 +287,28 @@ export default function SiteLogoEditor({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => fileRef.current?.click()}
+              onClick={() => {
+                uploadModeRef.current = "full";
+                fileRef.current?.click();
+              }}
               className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-medium"
             >
-              Upload &amp; crop
+              Upload logo
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                uploadModeRef.current = "crop";
+                fileRef.current?.click();
+              }}
+              className="px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-xs"
+            >
+              Upload &amp; crop…
             </button>
             {value && !isSvgDataUrl(value) ? (
               <button
                 type="button"
-                onClick={openCropExisting}
+                onClick={() => void openCropExisting()}
                 className="px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-xs"
               >
                 Crop current
@@ -262,7 +334,11 @@ export default function SiteLogoEditor({
               e.target.value = "";
               if (!f) return;
               try {
-                await loadFileForCrop(f);
+                if (uploadModeRef.current === "full") {
+                  await uploadFullLogo(f);
+                } else {
+                  await loadFileForCrop(f);
+                }
               } catch (err) {
                 onError?.(err instanceof Error ? err.message : "Could not read file.");
               }
@@ -271,7 +347,7 @@ export default function SiteLogoEditor({
         </div>
       </div>
 
-      {open && imageSrc ? (
+      {open && imageSrc && initialCroppedAreaPixels ? (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
           role="dialog"
@@ -293,12 +369,15 @@ export default function SiteLogoEditor({
 
             <div ref={cropContainerRef} className="relative h-[min(56vh,400px)] w-full bg-black">
               <Cropper
+                key={imageSrc}
+                ref={cropperRef}
                 image={imageSrc}
                 crop={crop}
                 zoom={zoom}
                 aspect={cropperAspect}
                 minZoom={MIN_ZOOM}
                 maxZoom={MAX_ZOOM}
+                initialCroppedAreaPixels={initialCroppedAreaPixels}
                 onCropChange={handleCropChange}
                 onZoomChange={handleZoomChange}
                 onMediaLoaded={(ms) => {
@@ -318,10 +397,10 @@ export default function SiteLogoEditor({
 
             <div className="p-4 space-y-3 border-t border-white/10">
               <p className="text-[11px] leading-snug text-white/45">
-                <strong className="text-white/70">Wide logos:</strong> use <span className="text-white/80">Free</span> or{" "}
-                <span className="text-white/80">3:1 / 21:9</span>. Drag <strong className="text-white/70">Zoom</strong>{" "}
-                left to zoom <em>out</em> and fit the full image — square or 4:3 crops often can&apos;t cover the full
-                width.
+                <strong className="text-white/70">Default:</strong> the whole image is selected.{" "}
+                <strong className="text-white/70">Apply</strong> saves it as-is, or change aspect / zoom first. Wide
+                logos: try <span className="text-white/80">Free</span> or <span className="text-white/80">3:1</span> if
+                you crop tighter.
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {ASPECT_PRESETS.map((p) => (

@@ -1,6 +1,6 @@
 import type { Area } from "react-easy-crop";
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.addEventListener("load", () => resolve(img));
@@ -86,4 +86,44 @@ export async function getCroppedImageDataUrl(
 
   const q = options?.quality ?? 0.92;
   return mime === "image/jpeg" ? canvas.toDataURL("image/jpeg", q) : canvas.toDataURL("image/png");
+}
+
+/**
+ * react-easy-crop passes `croppedAreaPercentages` (0–100 of natural width/height) as the first
+ * `onCropAreaChange` argument. Its `croppedAreaPixels` output is aspect-adjusted to the crop frame
+ * and can clip wide images — use this instead for export.
+ */
+export function percentCropToPixelRect(
+  croppedAreaPercentages: Area,
+  naturalWidth: number,
+  naturalHeight: number
+): Area {
+  const nw = naturalWidth;
+  const nh = naturalHeight;
+  return {
+    x: Math.round((croppedAreaPercentages.x / 100) * nw),
+    y: Math.round((croppedAreaPercentages.y / 100) * nh),
+    width: Math.max(1, Math.round((croppedAreaPercentages.width / 100) * nw)),
+    height: Math.max(1, Math.round((croppedAreaPercentages.height / 100) * nh)),
+  };
+}
+
+/** Uniform scale: entire image, long edge ≤ maxEdge. PNG. No cropping. */
+export async function rasterDataUrlToScaledPng(dataUrl: string, maxEdge = 640): Promise<string> {
+  const image = await loadImage(dataUrl);
+  const iw = image.naturalWidth;
+  const ih = image.naturalHeight;
+  const scale = Math.min(1, maxEdge / Math.max(iw, ih, 1));
+  const outW = Math.max(1, Math.round(iw * scale));
+  const outH = Math.max(1, Math.round(ih * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext("2d", { alpha: true });
+  if (!ctx) throw new Error("Canvas not supported");
+  ctx.clearRect(0, 0, outW, outH);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(image, 0, 0, iw, ih, 0, 0, outW, outH);
+  return canvas.toDataURL("image/png");
 }

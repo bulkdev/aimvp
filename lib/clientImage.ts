@@ -12,6 +12,21 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+/** Original file bytes as a data URL — use before cropping so dimensions match react-easy-crop (no re-encode). */
+export function fileToRawDataUrl(file: File): Promise<string> {
+  return readFileAsDataUrl(file);
+}
+
+/** Natural pixel size of a raster data URL (for default “full image” crop). */
+export function getDataUrlNaturalSize(dataUrl: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => reject(new Error("Failed to read image dimensions"));
+    img.src = dataUrl;
+  });
+}
+
 /**
  * Resize (max edge) and encode as JPEG. SVG and non-raster types pass through unchanged.
  */

@@ -101,8 +101,8 @@ function computeCroppedArea(
 
 /**
  * Same result as the cropper's internal getCropData().croppedAreaPixels for rotation 0.
- * `aspect` must match `Cropper`’s `getAspect()`: use the same `aspect` prop you pass to `<Cropper />`
- * (not `cropSize.width / cropSize.height` unless you also pass that as `cropSize`).
+ * `aspect` must match `Cropper`’s **getAspect()**: when the crop frame is sized internally,
+ * that is `cropSize.width / cropSize.height` — not always identical to the `aspect` prop (float noise).
  */
 export function getCroppedAreaPixelsForExport(
   crop: Point,
