@@ -4,6 +4,7 @@ import {
   extractPlaceIdFromMapsText,
   extractPlaceQueryFromPath,
   fetchPlaceReviewsByPlaceId,
+  GOOGLE_PLACES_MAX_REVIEWS_PER_REQUEST,
   resolveGoogleMapsUrl,
   searchPlaceIdByText,
 } from "@/lib/googleMapsReviews";
@@ -107,7 +108,9 @@ export async function POST(req: NextRequest) {
     if (detail.reviews.length === 0) {
       notes.push("Google returned no reviews for this listing (new listings or restricted reviews).");
     } else {
-      notes.push("Google returns at most five reviews per request via the Places API.");
+      notes.push(
+        `Google Places API returns at most ${GOOGLE_PLACES_MAX_REVIEWS_PER_REQUEST} reviews per place, with no pagination or “next batch”—add more reviews manually in the editor if needed.`
+      );
     }
 
     const payload: GoogleReviewsImportResponse = {

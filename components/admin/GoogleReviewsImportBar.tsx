@@ -68,8 +68,10 @@ export default function GoogleReviewsImportBar({
     <div className="rounded-lg border border-white/10 bg-white/5 p-3 space-y-2">
       <p className="text-[11px] text-white/55 leading-snug">
         Paste your public Google Maps or Business Profile link. Requires{" "}
-        <code className="text-white/70">GOOGLE_PLACES_API_KEY</code> and Places API (New) on the server. Google returns
-        at most five reviews per place.
+        <code className="text-white/70">GOOGLE_PLACES_API_KEY</code> and Places API (New) on the server. Google only
+        exposes up to <strong className="text-white/70">five</strong> reviews per place on this API—there is no second
+        batch or pagination. Import adds them to your list; use <strong className="text-white/70">Add Review</strong>{" "}
+        for any additional quotes.
       </p>
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
         <input

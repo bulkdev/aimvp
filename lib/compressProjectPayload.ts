@@ -105,6 +105,34 @@ export async function compressProjectSavePayload(payload: {
   return p;
 }
 
+export type ProjectSavePatchPayload = {
+  intake: IntakeFormData;
+  content: GeneratedSiteContent;
+  publicSlug: string;
+};
+
+/**
+ * Under this serialized size (UTF-16 length, ~bytes for ASCII/base64), skip recompressing images on
+ * PATCH — the payload already fits typical host limits (~4.5MB). Recompression runs only when the
+ * JSON is oversized (same images as stored; backup/export unchanged).
+ */
+export const PATCH_SKIP_IMAGE_RECOMPRESS_MAX_CHARS = 3_800_000;
+
+/**
+ * Returns the request body string for PATCH /api/projects/:id. Recompresses embedded images only
+ * when the uncompressed JSON exceeds {@link PATCH_SKIP_IMAGE_RECOMPRESS_MAX_CHARS}.
+ */
+export async function stringifyProjectPatchBody(
+  payload: ProjectSavePatchPayload
+): Promise<{ body: string; imageRecompressed: boolean }> {
+  const raw = JSON.stringify(payload);
+  if (raw.length <= PATCH_SKIP_IMAGE_RECOMPRESS_MAX_CHARS) {
+    return { body: raw, imageRecompressed: false };
+  }
+  const compressed = await compressProjectSavePayload(JSON.parse(raw) as ProjectSavePatchPayload);
+  return { body: JSON.stringify(compressed), imageRecompressed: true };
+}
+
 /** Full project JSON import: shrink embedded images before POST. */
 export async function compressImportedProject(project: Project): Promise<Project> {
   const c = await compressProjectSavePayload({

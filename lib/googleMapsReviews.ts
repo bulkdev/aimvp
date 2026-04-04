@@ -1,7 +1,13 @@
 /**
  * Resolve Google Maps links to Place IDs and fetch reviews via Places API (New).
  * HTML scraping is unreliable; this uses the official API (requires GOOGLE_PLACES_API_KEY).
+ *
+ * **Reviews cap:** Place Details returns at most {@link GOOGLE_PLACES_MAX_REVIEWS_PER_REQUEST} reviews.
+ * Google does not document pagination, cursors, or “next batch” for reviews on this endpoint—repeat
+ * calls return the same subset. More reviews require manual entry in the admin UI or a different
+ * product (e.g. Google Business Profile API for verified owners, with OAuth).
  */
+export const GOOGLE_PLACES_MAX_REVIEWS_PER_REQUEST = 5;
 
 const PLACE_ID_REGEX = /(ChIJ[A-Za-z0-9_-]{10,})/;
 
@@ -81,7 +87,7 @@ function mapReview(r: PlacesReview, fallbackMapsUri: string): ImportedManualRevi
   };
 }
 
-/** GET Place Details (New). Returns up to 5 reviews per Google’s limit. */
+/** GET Place Details (New). Returns up to {@link GOOGLE_PLACES_MAX_REVIEWS_PER_REQUEST} reviews; no pagination. */
 export async function fetchPlaceReviewsByPlaceId(
   placeId: string,
   apiKey: string
