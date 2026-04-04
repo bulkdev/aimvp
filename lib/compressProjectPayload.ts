@@ -4,14 +4,35 @@
  */
 import type { GeneratedSiteContent, IntakeFormData, Project } from "@/types";
 
-const MIN_CHARS_TO_COMPRESS = 55_000;
-const MAX_EDGE = 1600;
-const JPEG_QUALITY = 0.78;
+/** Tunable knobs for one pass of raster recompression. */
+export type RecompressForSaveOptions = {
+  /** Skip data URLs shorter than this (chars). */
+  minChars: number;
+  maxEdge: number;
+  quality: number;
+};
 
-export async function recompressDataUrlForSave(src: string): Promise<string> {
+/** Default pass: compresses many “medium” embedded images that still add up to a huge JSON. */
+export const RECOMPRESS_STANDARD: RecompressForSaveOptions = {
+  minChars: 10_000,
+  maxEdge: 1600,
+  quality: 0.78,
+};
+
+/** Second pass when the PATCH body is still too large after {@link RECOMPRESS_STANDARD}. */
+export const RECOMPRESS_AGGRESSIVE: RecompressForSaveOptions = {
+  minChars: 2_500,
+  maxEdge: 900,
+  quality: 0.62,
+};
+
+export async function recompressDataUrlForSave(
+  src: string,
+  opts: RecompressForSaveOptions = RECOMPRESS_STANDARD
+): Promise<string> {
   const t = src.trim();
   if (!t.startsWith("data:image/") || t.startsWith("data:image/svg")) return src;
-  if (t.length < MIN_CHARS_TO_COMPRESS) return src;
+  if (t.length < opts.minChars) return src;
 
   try {
     const blob = await fetch(t).then((r) => r.blob());
@@ -20,8 +41,8 @@ export async function recompressDataUrlForSave(src: string): Promise<string> {
       let w = bitmap.width;
       let h = bitmap.height;
       const maxDim = Math.max(w, h);
-      if (maxDim > MAX_EDGE) {
-        const scale = MAX_EDGE / maxDim;
+      if (maxDim > opts.maxEdge) {
+        const scale = opts.maxEdge / maxDim;
         w = Math.round(w * scale);
         h = Math.round(h * scale);
       }
@@ -33,7 +54,7 @@ export async function recompressDataUrlForSave(src: string): Promise<string> {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(bitmap, 0, 0, w, h);
-      const out = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+      const out = canvas.toDataURL("image/jpeg", opts.quality);
       return out.length < t.length ? out : src;
     } finally {
       bitmap.close();
@@ -43,33 +64,38 @@ export async function recompressDataUrlForSave(src: string): Promise<string> {
   }
 }
 
-export async function compressProjectSavePayload(payload: {
-  intake: IntakeFormData;
-  content: GeneratedSiteContent;
-  publicSlug: string;
-}): Promise<{ intake: IntakeFormData; content: GeneratedSiteContent; publicSlug: string }> {
+async function compressProjectSavePayloadWithOpts(
+  payload: {
+    intake: IntakeFormData;
+    content: GeneratedSiteContent;
+    publicSlug: string;
+  },
+  opts: RecompressForSaveOptions
+): Promise<{ intake: IntakeFormData; content: GeneratedSiteContent; publicSlug: string }> {
   const p = JSON.parse(JSON.stringify(payload)) as {
     intake: IntakeFormData;
     content: GeneratedSiteContent;
     publicSlug: string;
   };
 
+  const rc = (s: string) => recompressDataUrlForSave(s, opts);
+
   if (p.intake.logoDataUrl) {
-    p.intake.logoDataUrl = await recompressDataUrlForSave(p.intake.logoDataUrl);
+    p.intake.logoDataUrl = await rc(p.intake.logoDataUrl);
   }
   if (p.intake.navbarLogoDataUrl) {
-    p.intake.navbarLogoDataUrl = await recompressDataUrlForSave(p.intake.navbarLogoDataUrl);
+    p.intake.navbarLogoDataUrl = await rc(p.intake.navbarLogoDataUrl);
   }
 
   const assets = p.content.assets;
   if (assets) {
     if (assets.heroSlides?.length) {
-      assets.heroSlides = await Promise.all(assets.heroSlides.map(recompressDataUrlForSave));
+      assets.heroSlides = await Promise.all(assets.heroSlides.map(rc));
     }
     if (assets.serviceCardImages && typeof assets.serviceCardImages === "object") {
       const next: Record<string, string> = {};
       for (const [k, v] of Object.entries(assets.serviceCardImages)) {
-        next[k] = await recompressDataUrlForSave(v);
+        next[k] = await rc(v);
       }
       assets.serviceCardImages = next;
     }
@@ -78,31 +104,43 @@ export async function compressProjectSavePayload(payload: {
       for (const key of Object.keys(b)) {
         const v = b[key];
         if (typeof v === "string" && v) {
-          b[key] = await recompressDataUrlForSave(v);
+          b[key] = await rc(v);
         }
       }
     }
     if (assets.heroParallaxBackgroundUrl) {
-      assets.heroParallaxBackgroundUrl = await recompressDataUrlForSave(assets.heroParallaxBackgroundUrl);
+      assets.heroParallaxBackgroundUrl = await rc(assets.heroParallaxBackgroundUrl);
     }
-    if (assets.faviconDataUrl && assets.faviconDataUrl.length > MIN_CHARS_TO_COMPRESS) {
-      assets.faviconDataUrl = await recompressDataUrlForSave(assets.faviconDataUrl);
+    if (assets.faviconDataUrl && assets.faviconDataUrl.length > opts.minChars) {
+      assets.faviconDataUrl = await rc(assets.faviconDataUrl);
     }
     if (assets.portfolioEntries?.length) {
       for (const entry of assets.portfolioEntries) {
         if (entry.photos?.length) {
-          entry.photos = await Promise.all(entry.photos.map(recompressDataUrlForSave));
+          entry.photos = await Promise.all(entry.photos.map(rc));
         }
       }
     }
     if (assets.portfolioProjects?.length) {
       assets.portfolioProjects = await Promise.all(
-        assets.portfolioProjects.map((row) => Promise.all(row.map(recompressDataUrlForSave)))
+        assets.portfolioProjects.map((row) => Promise.all(row.map(rc)))
       );
     }
   }
 
   return p;
+}
+
+export async function compressProjectSavePayload(
+  payload: {
+    intake: IntakeFormData;
+    content: GeneratedSiteContent;
+    publicSlug: string;
+  },
+  tier: "standard" | "aggressive" = "standard"
+): Promise<{ intake: IntakeFormData; content: GeneratedSiteContent; publicSlug: string }> {
+  const opts = tier === "aggressive" ? RECOMPRESS_AGGRESSIVE : RECOMPRESS_STANDARD;
+  return compressProjectSavePayloadWithOpts(payload, opts);
 }
 
 export type ProjectSavePatchPayload = {
@@ -112,15 +150,22 @@ export type ProjectSavePatchPayload = {
 };
 
 /**
- * Under this serialized size (UTF-16 length, ~bytes for ASCII/base64), skip recompressing images on
- * PATCH — the payload already fits typical host limits (~4.5MB). Recompression runs only when the
- * JSON is oversized (same images as stored; backup/export unchanged).
+ * Under this serialized size, skip recompressing on PATCH (payload already fits typical limits).
+ * Keep a margin below ~4.5MB host caps (UTF-16 length ≈ bytes for base64-heavy JSON).
  */
-export const PATCH_SKIP_IMAGE_RECOMPRESS_MAX_CHARS = 3_800_000;
+export const PATCH_SKIP_IMAGE_RECOMPRESS_MAX_CHARS = 2_400_000;
+
+/** If still above this after aggressive pass, block save with a clear error (before fetch). */
+export const PATCH_BODY_HARD_MAX_CHARS = 4_100_000;
+
+/** Run a second pass when the first pass is still this large (room before hard max). */
+const PATCH_RUN_AGGRESSIVE_AFTER_CHARS = 3_400_000;
 
 /**
- * Returns the request body string for PATCH /api/projects/:id. Recompresses embedded images only
- * when the uncompressed JSON exceeds {@link PATCH_SKIP_IMAGE_RECOMPRESS_MAX_CHARS}.
+ * Returns the request body string for PATCH /api/projects/:id. Recompresses embedded images when the
+ * JSON is large; runs a second aggressive pass if needed. Many medium-sized data URLs (each under the
+ * old 55k threshold) could still overflow the request — standard {@link RECOMPRESS_STANDARD} uses a
+ * lower per-image floor so those get compressed too.
  */
 export async function stringifyProjectPatchBody(
   payload: ProjectSavePatchPayload
@@ -129,17 +174,35 @@ export async function stringifyProjectPatchBody(
   if (raw.length <= PATCH_SKIP_IMAGE_RECOMPRESS_MAX_CHARS) {
     return { body: raw, imageRecompressed: false };
   }
-  const compressed = await compressProjectSavePayload(JSON.parse(raw) as ProjectSavePatchPayload);
-  return { body: JSON.stringify(compressed), imageRecompressed: true };
+
+  const parsed = JSON.parse(raw) as ProjectSavePatchPayload;
+  let data = await compressProjectSavePayload(parsed, "standard");
+  let body = JSON.stringify(data);
+
+  if (body.length > PATCH_RUN_AGGRESSIVE_AFTER_CHARS) {
+    data = await compressProjectSavePayload(JSON.parse(body) as ProjectSavePatchPayload, "aggressive");
+    body = JSON.stringify(data);
+  }
+
+  if (body.length > PATCH_BODY_HARD_MAX_CHARS) {
+    throw new Error(
+      "Save payload is still too large after compressing images. Remove some hero slides, portfolio photos, or service images, then save again."
+    );
+  }
+
+  return { body, imageRecompressed: true };
 }
 
 /** Full project JSON import: shrink embedded images before POST. */
 export async function compressImportedProject(project: Project): Promise<Project> {
-  const c = await compressProjectSavePayload({
-    intake: project.intake,
-    content: project.content,
-    publicSlug: project.publicSlug ?? "",
-  });
+  const c = await compressProjectSavePayload(
+    {
+      intake: project.intake,
+      content: project.content,
+      publicSlug: project.publicSlug ?? "",
+    },
+    "standard"
+  );
   return {
     ...project,
     intake: c.intake,
