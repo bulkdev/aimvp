@@ -160,6 +160,20 @@ export interface GeneratedSiteContent {
     /** Browser tab / bookmark icon (PNG, ICO, or SVG data URL). Set in site admin. */
     faviconDataUrl?: string;
     /**
+     * Home page SEO: browser title, meta description, social share image, optional keywords.
+     * Unset fields fall back to generated defaults from business name, location, and services.
+     */
+    siteSeo?: {
+      /** `<title>` / og:title / twitter:title */
+      metaTitle?: string;
+      /** Meta description (~150–160 characters recommended). */
+      metaDescription?: string;
+      /** Open Graph / Twitter image (URL or data URL). Falls back to first hero slide or logo. */
+      ogImageUrl?: string;
+      /** Optional comma-separated keywords (`<meta name="keywords">`). */
+      keywords?: string;
+    };
+    /**
      * Renovations template: full-bleed image behind the parallax hero (URL or data URL).
      * When unset, the default subway-tile pattern is used.
      */

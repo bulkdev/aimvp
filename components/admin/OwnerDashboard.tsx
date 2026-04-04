@@ -239,6 +239,12 @@ export default function OwnerDashboard({ project }: Props) {
   const [siteTemplate, setSiteTemplate] = useState<SiteTemplateChoice>(project.intake.siteTemplate ?? "auto");
   const [customDomain, setCustomDomain] = useState(project.intake.customDomain ?? "");
   const [publicSlug, setPublicSlug] = useState(project.publicSlug ?? "");
+  const [siteSeoMetaTitle, setSiteSeoMetaTitle] = useState(project.content.assets?.siteSeo?.metaTitle ?? "");
+  const [siteSeoMetaDescription, setSiteSeoMetaDescription] = useState(
+    project.content.assets?.siteSeo?.metaDescription ?? ""
+  );
+  const [siteSeoOgImageUrl, setSiteSeoOgImageUrl] = useState(project.content.assets?.siteSeo?.ogImageUrl ?? "");
+  const [siteSeoKeywords, setSiteSeoKeywords] = useState(project.content.assets?.siteSeo?.keywords ?? "");
   const [phone, setPhone] = useState(project.intake.phone ?? "");
   const [city, setCity] = useState(project.intake.city ?? "");
   const [state, setState] = useState(project.intake.state ?? "");
@@ -528,6 +534,19 @@ export default function OwnerDashboard({ project }: Props) {
               const n = normalizeNavbarMenuItems(navbarMenuItems);
               return n.length > 0 ? n : undefined;
             })(),
+            siteSeo: (() => {
+              const metaTitle = siteSeoMetaTitle.trim();
+              const metaDescription = siteSeoMetaDescription.trim();
+              const ogImageUrl = siteSeoOgImageUrl.trim();
+              const keywords = siteSeoKeywords.trim();
+              if (!metaTitle && !metaDescription && !ogImageUrl && !keywords) return undefined;
+              return {
+                ...(metaTitle ? { metaTitle } : {}),
+                ...(metaDescription ? { metaDescription } : {}),
+                ...(ogImageUrl ? { ogImageUrl } : {}),
+                ...(keywords ? { keywords } : {}),
+              };
+            })(),
           },
         },
         publicSlug: publicSlug.trim(),
@@ -644,6 +663,50 @@ export default function OwnerDashboard({ project }: Props) {
               </a>
             </p>
           </div>
+        </section>
+
+        <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+          <h2 className="text-sm font-medium">SEO &amp; browser tab</h2>
+          <p className="text-[11px] text-white/45">
+            Overrides the auto-generated title and description for preview and published home pages. Leave blank to use
+            defaults from your business name, location, and services.
+          </p>
+          <label className="block text-xs text-white/70">
+            Page title (browser tab)
+            <input
+              className="mt-1 w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+              value={siteSeoMetaTitle}
+              onChange={(e) => setSiteSeoMetaTitle(e.target.value)}
+              placeholder="e.g. Emergency Plumber in Seattle | Acme Plumbing"
+            />
+          </label>
+          <label className="block text-xs text-white/70">
+            Meta description (search &amp; social snippets)
+            <textarea
+              className="mt-1 w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 min-h-[88px]"
+              value={siteSeoMetaDescription}
+              onChange={(e) => setSiteSeoMetaDescription(e.target.value)}
+              placeholder="Short summary, ~150–160 characters. Shown in Google results and link previews."
+            />
+          </label>
+          <label className="block text-xs text-white/70">
+            Social share image (optional)
+            <input
+              className="mt-1 w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm"
+              value={siteSeoOgImageUrl}
+              onChange={(e) => setSiteSeoOgImageUrl(e.target.value)}
+              placeholder="Image URL for Open Graph / Twitter — defaults to first hero slide or logo"
+            />
+          </label>
+          <label className="block text-xs text-white/70">
+            Keywords (optional)
+            <input
+              className="mt-1 w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm"
+              value={siteSeoKeywords}
+              onChange={(e) => setSiteSeoKeywords(e.target.value)}
+              placeholder="Comma-separated, e.g. plumber, drain cleaning, water heater"
+            />
+          </label>
         </section>
 
         <SiteLogoEditor

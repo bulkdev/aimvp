@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getProject } from "@/lib/store";
-import { intakeLocationLine } from "@/lib/location";
 import PreviewShell from "@/components/preview/PreviewShell";
 import { siteFaviconIcons } from "@/lib/favicon-metadata";
+import { resolveHomePageSeo } from "@/lib/site-seo-metadata";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -32,27 +32,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? rawDomain
       : `https://${rawDomain}`
     : undefined;
-  const locationLine = project?.intake ? intakeLocationLine(project.intake) : "";
-  const primaryService =
-    project?.content?.assets?.serviceGroups?.[0]?.items?.[0] ||
-    project?.content?.services?.[0]?.title ||
-    "Local Services";
-  const seoTitle = project
-    ? locationLine
-      ? `${primaryService} in ${locationLine} | ${project.content.brandName}`
-      : `${project.content.brandName} | ${primaryService}`
-    : "Preview";
-  const seoDescription = project
-    ? `${project.content.brandName} offers ${primaryService.toLowerCase()}${locationLine ? ` in ${locationLine}` : ""}. Fast response, trusted workmanship, and easy scheduling.`
-    : "Generated business website preview.";
-  const ogImage =
-    project?.content?.assets?.heroSlides?.[0] ||
-    project?.intake?.logoDataUrl ||
-    undefined;
+  const resolved = project ? resolveHomePageSeo(project) : null;
+  const seoTitle = resolved?.title ?? "Preview";
+  const seoDescription = resolved?.description ?? "Generated business website preview.";
+  const ogImage = resolved?.ogImage;
+  const keywordList = resolved?.keywords
+    ? resolved.keywords
+        .split(",")
+        .map((k) => k.trim())
+        .filter(Boolean)
+    : undefined;
 
   return {
     title: seoTitle,
     description: seoDescription,
+    keywords: keywordList && keywordList.length > 0 ? keywordList : undefined,
     robots: {
       index: false,
       follow: false,

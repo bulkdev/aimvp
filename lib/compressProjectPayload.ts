@@ -131,6 +131,12 @@ async function compressProjectSavePayloadWithOpts(
     if (assets.faviconDataUrl && assets.faviconDataUrl.length > opts.minChars) {
       assets.faviconDataUrl = await rc(assets.faviconDataUrl);
     }
+    if (assets.siteSeo?.ogImageUrl?.trim()) {
+      assets.siteSeo = {
+        ...assets.siteSeo,
+        ogImageUrl: await rc(assets.siteSeo.ogImageUrl),
+      };
+    }
     if (assets.portfolioEntries?.length) {
       for (const entry of assets.portfolioEntries) {
         if (entry.photos?.length) {

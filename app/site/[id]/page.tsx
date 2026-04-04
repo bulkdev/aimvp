@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProject } from "@/lib/store";
 import { absoluteUrl, buildPublishedBasePath, publicPagesEnabled } from "@/lib/seo";
-import { intakeLocationLine } from "@/lib/location";
 import { siteFaviconIcons } from "@/lib/favicon-metadata";
+import { resolveHomePageSeo } from "@/lib/site-seo-metadata";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,17 +28,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const project = await getProject(id);
   if (!project) return {};
-  const locationLine = intakeLocationLine(project.intake);
-  const firstService = project.content.services[0]?.title || "Local Services";
-  const title = locationLine
-    ? `${firstService} in ${locationLine} | ${project.content.brandName}`
-    : `${project.content.brandName} | ${firstService}`;
-  const description = `${project.content.brandName} offers ${firstService.toLowerCase()}${locationLine ? ` in ${locationLine}` : ""}. Call today for fast, reliable service.`;
+  const { title, description, ogImage, keywords } = resolveHomePageSeo(project);
+  const keywordList = keywords
+    ? keywords
+        .split(",")
+        .map((k) => k.trim())
+        .filter(Boolean)
+    : undefined;
   const canonical = absoluteUrl(buildPublishedBasePath(project));
-  const ogImage = project.content.assets?.heroSlides?.[0] || project.intake.logoDataUrl || undefined;
   return {
     title: { absolute: title },
     description,
+    keywords: keywordList && keywordList.length > 0 ? keywordList : undefined,
     alternates: { canonical },
     robots: { index: true, follow: true },
     openGraph: {
