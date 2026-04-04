@@ -26,6 +26,16 @@ export const RECOMPRESS_AGGRESSIVE: RecompressForSaveOptions = {
   quality: 0.62,
 };
 
+/** PNG / WebP / GIF may carry alpha — never flatten those to JPEG (white matting) on save. */
+function dataUrlUsesAlphaFriendlyFormat(dataUrl: string): boolean {
+  const head = dataUrl.slice(0, 48).toLowerCase();
+  return (
+    head.startsWith("data:image/png") ||
+    head.startsWith("data:image/webp") ||
+    head.startsWith("data:image/gif")
+  );
+}
+
 export async function recompressDataUrlForSave(
   src: string,
   opts: RecompressForSaveOptions = RECOMPRESS_STANDARD
@@ -49,12 +59,19 @@ export async function recompressDataUrlForSave(
       const canvas = document.createElement("canvas");
       canvas.width = w;
       canvas.height = h;
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { alpha: true });
       if (!ctx) return src;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, w, h);
+      const preserveAlpha = dataUrlUsesAlphaFriendlyFormat(t);
+      if (preserveAlpha) {
+        ctx.clearRect(0, 0, w, h);
+      } else {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
       ctx.drawImage(bitmap, 0, 0, w, h);
-      const out = canvas.toDataURL("image/jpeg", opts.quality);
+      const out = preserveAlpha ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", opts.quality);
       return out.length < t.length ? out : src;
     } finally {
       bitmap.close();
