@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ShowcaseSite } from "@/lib/showcase-portfolio";
 import { fileToFaviconDataUrl } from "@/lib/clientImage";
 
@@ -31,6 +31,11 @@ export default function MainAdminDashboard() {
 
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [dupErr, setDupErr] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   const [portfolioSites, setPortfolioSites] = useState<ShowcaseSite[]>([]);
   const [portfolioErr, setPortfolioErr] = useState<string | null>(null);
@@ -141,6 +146,23 @@ export default function MainAdminDashboard() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const valid = new Set(sites.map((s) => s.id));
+    setSelectedIds((prev) => {
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (valid.has(id)) next.add(id);
+      }
+      return next.size === prev.size && [...next].every((id) => prev.has(id)) ? prev : next;
+    });
+  }, [sites]);
+
+  useEffect(() => {
+    const el = selectAllRef.current;
+    if (!el) return;
+    el.indeterminate = selectedIds.size > 0 && selectedIds.size < sites.length;
+  }, [selectedIds, sites.length]);
+
   async function submitAssign(e: React.FormEvent) {
     e.preventDefault();
     if (!assignForId) return;
@@ -199,6 +221,92 @@ export default function MainAdminDashboard() {
     }
   }
 
+  async function deleteSite(projectId: string, brandName: string) {
+    if (
+      !window.confirm(
+        `Delete “${brandName}”? This permanently removes the site and its public URL. This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setDeleteErr(null);
+    setDeletingId(projectId);
+    try {
+      const res = await fetch(`/api/admin/sites/${encodeURIComponent(projectId)}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Delete failed.");
+      }
+      await load();
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  function selectAllSites() {
+    setSelectedIds(new Set(sites.map((s) => s.id)));
+  }
+
+  function clearSiteSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function toggleSiteSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllRows() {
+    if (sites.length === 0) return;
+    if (selectedIds.size === sites.length) clearSiteSelection();
+    else selectAllSites();
+  }
+
+  async function deleteSelectedSites() {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    if (
+      !window.confirm(
+        `Permanently delete ${ids.length} site(s)? This removes each site and its public URL. This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    setDeleteErr(null);
+    setBulkDeleting(true);
+    try {
+      for (const id of ids) {
+        const res = await fetch(`/api/admin/sites/${encodeURIComponent(id)}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || `Failed to delete site ${id}.`);
+        }
+      }
+      setSelectedIds(new Set());
+      await load();
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : "Delete failed.");
+      await load();
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
+  const allSelected = sites.length > 0 && selectedIds.size === sites.length;
+  const selectionBlocked = bulkDeleting || deletingId !== null;
+
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 md:p-10">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -230,6 +338,9 @@ export default function MainAdminDashboard() {
         )}
         {dupErr && (
           <div className="p-4 rounded-xl bg-red-500/15 border border-red-400/30 text-red-200 text-sm">{dupErr}</div>
+        )}
+        {deleteErr && (
+          <div className="p-4 rounded-xl bg-red-500/15 border border-red-400/30 text-red-200 text-sm">{deleteErr}</div>
         )}
 
         {!loading && (
@@ -440,9 +551,43 @@ export default function MainAdminDashboard() {
           <p className="text-white/50 text-sm">Loading sites…</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-white/10">
+            {sites.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-white/10 bg-white/[0.03]">
+                <button
+                  type="button"
+                  disabled={selectionBlocked}
+                  onClick={selectAllSites}
+                  className="px-3 py-1.5 rounded-lg border border-white/20 text-xs font-medium hover:bg-white/10 disabled:opacity-50"
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedIds.size === 0 || selectionBlocked}
+                  onClick={() => void deleteSelectedSites()}
+                  className="px-3 py-1.5 rounded-lg border border-red-400/40 text-red-200/90 text-xs font-medium hover:bg-red-500/15 disabled:opacity-50"
+                >
+                  {bulkDeleting
+                    ? "Deleting…"
+                    : `Delete selected${selectedIds.size ? ` (${selectedIds.size})` : ""}`}
+                </button>
+              </div>
+            )}
             <table className="w-full text-sm text-left">
               <thead>
                 <tr className="border-b border-white/10 bg-white/5">
+                  <th className="pl-4 pr-2 py-3 w-10">
+                    <span className="sr-only">Select row</span>
+                    <input
+                      ref={selectAllRef}
+                      type="checkbox"
+                      checked={allSelected}
+                      disabled={sites.length === 0 || selectionBlocked}
+                      onChange={toggleSelectAllRows}
+                      className="rounded border-white/30 bg-white/10 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50"
+                      aria-label={allSelected ? "Deselect all sites" : "Select all sites"}
+                    />
+                  </th>
                   <th className="px-4 py-3 font-medium">Business</th>
                   <th className="px-4 py-3 font-medium">Owner</th>
                   <th className="px-4 py-3 font-medium">Public URL</th>
@@ -453,6 +598,16 @@ export default function MainAdminDashboard() {
               <tbody>
                 {sites.map((s) => (
                   <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.03]">
+                    <td className="pl-4 pr-2 py-3 align-top">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(s.id)}
+                        disabled={selectionBlocked}
+                        onChange={() => toggleSiteSelected(s.id)}
+                        className="rounded border-white/30 bg-white/10 text-indigo-600 focus:ring-indigo-500 disabled:opacity-50 mt-1"
+                        aria-label={`Select ${s.brandName}`}
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="font-medium">{s.brandName}</div>
                       <div className="text-xs text-white/40 font-mono mt-0.5">{s.id}</div>
@@ -486,7 +641,7 @@ export default function MainAdminDashboard() {
                         </Link>
                         <button
                           type="button"
-                          disabled={duplicatingId === s.id}
+                          disabled={duplicatingId === s.id || bulkDeleting}
                           onClick={() => void duplicateSite(s.id)}
                           className="px-2.5 py-1 rounded border border-white/20 text-white/90 text-xs hover:bg-white/10 disabled:opacity-50"
                         >
@@ -494,6 +649,7 @@ export default function MainAdminDashboard() {
                         </button>
                         <button
                           type="button"
+                          disabled={bulkDeleting}
                           onClick={() => {
                             setAssignForId(s.id);
                             setEmail(s.ownerEmail || "");
@@ -502,9 +658,17 @@ export default function MainAdminDashboard() {
                             setAssignErr(null);
                             setAssignMsg(null);
                           }}
-                          className="px-2.5 py-1 rounded border border-amber-400/40 text-amber-100 text-xs hover:bg-amber-500/10"
+                          className="px-2.5 py-1 rounded border border-amber-400/40 text-amber-100 text-xs hover:bg-amber-500/10 disabled:opacity-50"
                         >
                           Assign owner
+                        </button>
+                        <button
+                          type="button"
+                          disabled={deletingId === s.id || bulkDeleting}
+                          onClick={() => void deleteSite(s.id, s.brandName)}
+                          className="px-2.5 py-1 rounded border border-red-400/35 text-red-200/90 text-xs hover:bg-red-500/15 disabled:opacity-50"
+                        >
+                          {deletingId === s.id ? "Deleting…" : "Delete"}
                         </button>
                       </div>
                     </td>

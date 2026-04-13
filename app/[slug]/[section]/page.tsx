@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { auth } from "@/auth";
 import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProjectByPublicSlug } from "@/lib/store";
 import { buildPublishedBasePath, isReservedPublicSlug, publicPagesEnabled } from "@/lib/seo";
@@ -24,12 +25,14 @@ export default async function PublishedSubpageBySlug({ params }: Props) {
   const key = pathSegmentToSection(section);
   if (key === "booking" && !project.intake.bookingEnabled) notFound();
   if (key === "payment" && !project.intake.paymentEnabled) notFound();
+  const session = await auth();
 
   return (
     <SiteTemplate
       project={project}
       subpage={key}
       publishedBasePath={buildPublishedBasePath(project)}
+      viewerUserId={session?.user?.id}
     />
   );
 }

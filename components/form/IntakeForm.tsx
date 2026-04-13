@@ -19,6 +19,8 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
     businessDescription: "",
     customDomain: "",
     sourceLink: "",
+    creatorName: "",
+    creatorContentType: "other",
     siteTemplate: "auto",
     logoDataUrl: undefined,
     phone: "",
@@ -237,11 +239,43 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
               <option value="plumbing-flow">Plumbing — Flow (compact slider + glass nav)</option>
               <option value="super-service">Super Service — Multi-trade HVAC/plumbing style</option>
               <option value="renovations">Renovations — Parallax, particles &amp; Instagram-style portfolio</option>
+              <option value="creator-membership">Content Creator / Membership Platform</option>
             </select>
             <p className="text-white/35 text-xs mt-1.5">
               Auto looks for trade keywords (e.g. plumbing or HVAC). Choose a layout here to force a template.
             </p>
           </div>
+
+          {form.siteTemplate === "creator-membership" ? (
+            <>
+              <div>
+                <label className={LABEL_CLASS}>Creator display name (optional)</label>
+                <input
+                  type="text"
+                  className={FIELD_CLASS}
+                  placeholder="e.g. Alex Rivera"
+                  value={form.creatorName || ""}
+                  onChange={(e) => set("creatorName", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>Content type</label>
+                <select
+                  className={`${FIELD_CLASS} cursor-pointer`}
+                  value={form.creatorContentType || "other"}
+                  onChange={(e) => set("creatorContentType", e.target.value as IntakeFormData["creatorContentType"])}
+                >
+                  <option value="music">Music</option>
+                  <option value="podcast">Podcast</option>
+                  <option value="vlog">Vlog</option>
+                  <option value="education">Education</option>
+                  <option value="fitness">Fitness</option>
+                  <option value="gaming">Gaming</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </>
+          ) : null}
 
           {/* Logo Upload */}
           <div>

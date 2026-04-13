@@ -36,6 +36,8 @@ import RenovationsHero from "./renovations/RenovationsHero";
 import RenovationsServicesShowcase from "./renovations/RenovationsServicesShowcase";
 import RenovationsInstagramFeed from "./renovations/RenovationsInstagramFeed";
 import RenovationsParallaxBand from "./renovations/RenovationsParallaxBand";
+import CreatorMembershipTemplate from "./creator/CreatorMembershipTemplate";
+import { isActiveSubscriber } from "@/lib/creator-membership";
 import type { PublishedSubpageSection, SiteSectionKey } from "@/lib/published-subpages";
 import { publishedNavHref } from "@/lib/published-nav-hrefs";
 import {
@@ -51,9 +53,11 @@ interface Props {
   subpage?: PublishedSubpageSection;
   /** Set on live published routes so nav/footer use `/slug/...` instead of `#` anchors. */
   publishedBasePath?: string;
+  /** Optional logged-in user id for personalized template rendering. */
+  viewerUserId?: string;
 }
 
-export default function SiteTemplate({ project, subpage, publishedBasePath }: Props) {
+export default function SiteTemplate({ project, subpage, publishedBasePath, viewerUserId }: Props) {
   const { content, intake } = project;
   const isSubpage = Boolean(subpage);
   const heroParallaxOverlayPct = normalizeParallaxOverlayOpacity(content.assets?.parallaxOverlayOpacity);
@@ -465,82 +469,90 @@ export default function SiteTemplate({ project, subpage, publishedBasePath }: Pr
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
-      <>
-        {variant === "renovations" ? (
-          <RenovationsNavbar content={content} intake={intake} publishedBasePath={publishedBasePath} />
-        ) : variant === "superService" ? (
-          <>
-            <SuperServiceTopBar />
-            <SuperServiceNavbar content={content} intake={intake} publishedBasePath={publishedBasePath} />
-          </>
-        ) : variant === "plumbing" && plumbingPreset === "flow" ? (
-          <PlumbingFlowNavbar content={content} intake={intake} publishedBasePath={publishedBasePath} />
-        ) : (
-          <NavbarSection
-            content={content}
-            intake={intake}
-            isPlumbing={variant === "plumbing"}
-            styleVariant={effectiveDesign?.navbar ?? "standard"}
-            publishedBasePath={publishedBasePath}
-          />
-        )}
-        {effectiveOrder.map((key, i) => {
-          const node = sectionMap[key];
-          if (node == null) return null;
-          const inner =
-            subpage && key !== "hero" ? (
-              parallaxLayerAllowedForKey(content.assets, key, true) ? (
-                <SubpageParallaxBackdrop
-                  imageUrl={sectionParallaxImageForContext(content.assets, key, true)}
-                  overlayOpacity={overlayOpacityForSection(content.assets, key)}
-                >
-                  {node}
-                </SubpageParallaxBackdrop>
+      {variant === "creatorMembership" ? (
+        <CreatorMembershipTemplate
+          project={project}
+          publishedBasePath={publishedBasePath}
+          isSubscriber={isActiveSubscriber(project, viewerUserId)}
+        />
+      ) : (
+        <>
+          {variant === "renovations" ? (
+            <RenovationsNavbar content={content} intake={intake} publishedBasePath={publishedBasePath} />
+          ) : variant === "superService" ? (
+            <>
+              <SuperServiceTopBar />
+              <SuperServiceNavbar content={content} intake={intake} publishedBasePath={publishedBasePath} />
+            </>
+          ) : variant === "plumbing" && plumbingPreset === "flow" ? (
+            <PlumbingFlowNavbar content={content} intake={intake} publishedBasePath={publishedBasePath} />
+          ) : (
+            <NavbarSection
+              content={content}
+              intake={intake}
+              isPlumbing={variant === "plumbing"}
+              styleVariant={effectiveDesign?.navbar ?? "standard"}
+              publishedBasePath={publishedBasePath}
+            />
+          )}
+          {effectiveOrder.map((key, i) => {
+            const node = sectionMap[key];
+            if (node == null) return null;
+            const inner =
+              subpage && key !== "hero" ? (
+                parallaxLayerAllowedForKey(content.assets, key, true) ? (
+                  <SubpageParallaxBackdrop
+                    imageUrl={sectionParallaxImageForContext(content.assets, key, true)}
+                    overlayOpacity={overlayOpacityForSection(content.assets, key)}
+                  >
+                    {node}
+                  </SubpageParallaxBackdrop>
+                ) : (
+                  node
+                )
               ) : (
                 node
-              )
-            ) : (
-              node
+              );
+            return (
+              <ScrollReveal key={key} delayMs={i * 65} variant={key === "hero" ? "hero" : "default"}>
+                {inner}
+              </ScrollReveal>
             );
-          return (
-            <ScrollReveal key={key} delayMs={i * 65} variant={key === "hero" ? "hero" : "default"}>
-              {inner}
+          })}
+          {standaloneAboutTrail ? (
+            <ScrollReveal delayMs={effectiveOrder.length * 65} variant="default">
+              {variant === "superService" ? (
+                <SuperServiceWhySection content={content} intake={intake} />
+              ) : (
+                <AboutSection content={content} intake={intake} />
+              )}
             </ScrollReveal>
-          );
-        })}
-        {standaloneAboutTrail ? (
-          <ScrollReveal delayMs={effectiveOrder.length * 65} variant="default">
-            {variant === "superService" ? (
-              <SuperServiceWhySection content={content} intake={intake} />
-            ) : (
-              <AboutSection content={content} intake={intake} />
-            )}
-          </ScrollReveal>
-        ) : null}
-        {standaloneContactTrail ? (
+          ) : null}
+          {standaloneContactTrail ? (
+            <ScrollReveal
+              delayMs={(effectiveOrder.length + (standaloneAboutTrail ? 1 : 0)) * 65}
+              variant="default"
+            >
+              <ContactSection content={content} intake={intake} projectId={project.id} />
+            </ScrollReveal>
+          ) : null}
+          {variant === "superService" && !subpage && (
+            <ScrollReveal delayMs={normalizedOrder.length * 65}>
+              <SuperServiceAreasGrid content={content} />
+            </ScrollReveal>
+          )}
           <ScrollReveal
-            delayMs={(effectiveOrder.length + (standaloneAboutTrail ? 1 : 0)) * 65}
-            variant="default"
+            delayMs={
+              (effectiveOrder.length +
+                (variant === "superService" && !subpage ? 1 : 0) +
+                subpageTrailCount) *
+              65
+            }
           >
-            <ContactSection content={content} intake={intake} projectId={project.id} />
+            <FooterSection content={content} intake={intake} publishedBasePath={publishedBasePath} />
           </ScrollReveal>
-        ) : null}
-        {variant === "superService" && !subpage && (
-          <ScrollReveal delayMs={normalizedOrder.length * 65}>
-            <SuperServiceAreasGrid content={content} />
-          </ScrollReveal>
-        )}
-        <ScrollReveal
-          delayMs={
-            (effectiveOrder.length +
-              (variant === "superService" && !subpage ? 1 : 0) +
-              subpageTrailCount) *
-            65
-          }
-        >
-          <FooterSection content={content} intake={intake} publishedBasePath={publishedBasePath} />
-        </ScrollReveal>
-      </>
+        </>
+      )}
       <a href={chatHref} className="chat-fab" aria-label="Open chat/contact">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path

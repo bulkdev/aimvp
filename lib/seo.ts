@@ -39,6 +39,11 @@ export const RESERVED_PUBLIC_URL_SLUGS = new Set([
   "payment",
   "cta",
   "areas",
+  "library",
+  "reels",
+  "video",
+  "account",
+  "creator-admin",
 ]);
 
 export function normalizePublicSlug(input: string): string {

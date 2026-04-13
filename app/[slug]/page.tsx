@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { auth } from "@/auth";
 import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProjectByPublicSlug } from "@/lib/store";
 import { absoluteUrl, buildPublishedBasePath, isReservedPublicSlug, publicPagesEnabled } from "@/lib/seo";
@@ -19,7 +20,14 @@ export default async function CustomerSlugPage({ params }: Props) {
   if (isReservedPublicSlug(slug)) notFound();
   const project = await getProjectByPublicSlug(slug);
   if (!project) notFound();
-  return <SiteTemplate project={project} publishedBasePath={buildPublishedBasePath(project)} />;
+  const session = await auth();
+  return (
+    <SiteTemplate
+      project={project}
+      publishedBasePath={buildPublishedBasePath(project)}
+      viewerUserId={session?.user?.id}
+    />
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

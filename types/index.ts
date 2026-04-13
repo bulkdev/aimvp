@@ -12,13 +12,19 @@ export type SiteTemplateChoice =
   /** Multi-trade HVAC/plumbing style: promo bar, Book Online, trade cards, areas grid */
   | "super-service"
   /** Renovation / GC: parallax sections, particle hero, Instagram-style portfolio grid */
-  | "renovations";
+  | "renovations"
+  /** Patreon-style creator site with gated member content. */
+  | "creator-membership";
 
 export interface IntakeFormData {
   companyName: string;
   businessDescription: string;
   customDomain?: string;
   sourceLink?: string;
+  /** Optional creator-facing brand label (falls back to companyName). */
+  creatorName?: string;
+  /** Optional creator content vertical for template seeding. */
+  creatorContentType?: "music" | "podcast" | "vlog" | "education" | "fitness" | "gaming" | "other";
   importedHeroSlides?: string[];
   importedPortfolioProjects?: string[][];
   importedLogoUrl?: string;
@@ -241,8 +247,140 @@ export interface GeneratedSiteContent {
         "home" | "subpage" | "both"
       >
     >;
+    /**
+     * Creator Membership template configuration + demo content.
+     * Stored on project content so generated sites can run as full-stack experiences.
+     */
+    creatorMembership?: {
+      creatorName?: string;
+      creatorTagline?: string;
+      creatorBio?: string;
+      creatorAvatarUrl?: string;
+      contentType?: "music" | "podcast" | "vlog" | "education" | "fitness" | "gaming" | "other";
+      stickyCtaText?: string;
+      teaserHeadline?: string;
+      paywallTitle?: string;
+      paywallSubtitle?: string;
+      monthlyPlan?: {
+        id: string;
+        name: string;
+        priceUsd: number;
+        billingInterval: "month";
+        description?: string;
+      };
+      yearlyPlan?: {
+        id: string;
+        name: string;
+        priceUsd: number;
+        billingInterval: "year";
+        description?: string;
+      };
+      testimonials?: Array<{
+        id: string;
+        name: string;
+        quote: string;
+      }>;
+      categories?: string[];
+      tags?: string[];
+      videos?: CreatorVideo[];
+      reels?: CreatorReel[];
+      emotes?: CreatorEmote[];
+      subscriptions?: CreatorSubscription[];
+      watchHistory?: CreatorWatchHistory[];
+      comments?: CreatorComment[];
+      reactions?: CreatorReaction[];
+      savedVideos?: CreatorSavedVideo[];
+    };
   };
   theme: SiteTheme;
+}
+
+export type CreatorVideoVisibility = "public" | "member";
+
+export interface CreatorVideo {
+  id: string;
+  title: string;
+  description: string;
+  fullVideoUrl: string;
+  thumbnailUrl?: string;
+  durationSec: number;
+  views: number;
+  engagementScore: number;
+  visibility: CreatorVideoVisibility;
+  category?: string;
+  tags: string[];
+  createdAt: string;
+}
+
+export interface CreatorReel {
+  id: string;
+  videoId: string;
+  title: string;
+  previewVideoUrl: string;
+  thumbnailUrl?: string;
+  durationSec: number;
+  createdAt: string;
+}
+
+export interface CreatorSubscription {
+  id: string;
+  userId: string;
+  projectId: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  planId: string;
+  status: "active" | "canceled" | "past_due" | "trialing";
+  currentPeriodEnd?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatorWatchHistory {
+  id: string;
+  userId: string;
+  videoId: string;
+  projectId: string;
+  progressPct: number;
+  completed: boolean;
+  updatedAt: string;
+  totalWatchSec: number;
+}
+
+export interface CreatorComment {
+  id: string;
+  projectId: string;
+  videoId: string;
+  userId: string;
+  authorName?: string;
+  body: string;
+  parentId?: string;
+  isCreator: boolean;
+  highlightedByCreator?: boolean;
+  createdAt: string;
+}
+
+export interface CreatorReaction {
+  id: string;
+  projectId: string;
+  videoId?: string;
+  commentId?: string;
+  userId: string;
+  emoteCode: string;
+  createdAt: string;
+}
+
+export interface CreatorEmote {
+  code: string;
+  label: string;
+  imageUrl?: string;
+}
+
+export interface CreatorSavedVideo {
+  id: string;
+  projectId: string;
+  userId: string;
+  videoId: string;
+  createdAt: string;
 }
 
 // ─── Theme / Branding ────────────────────────────────────────────────────────

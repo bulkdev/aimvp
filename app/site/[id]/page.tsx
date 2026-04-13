@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { auth } from "@/auth";
 import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProject } from "@/lib/store";
 import { absoluteUrl, buildPublishedBasePath, publicPagesEnabled } from "@/lib/seo";
@@ -21,7 +22,14 @@ export default async function PublishedSitePage({ params }: Props) {
   if (project.publicSlug?.trim()) {
     redirect(buildPublishedBasePath(project));
   }
-  return <SiteTemplate project={project} publishedBasePath={buildPublishedBasePath(project)} />;
+  const session = await auth();
+  return (
+    <SiteTemplate
+      project={project}
+      publishedBasePath={buildPublishedBasePath(project)}
+      viewerUserId={session?.user?.id}
+    />
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

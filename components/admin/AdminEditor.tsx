@@ -668,6 +668,7 @@ export default function AdminEditor({ project }: Props) {
             <option value="plumbing-flow" className="text-slate-900">Template: Plumbing — Flow (compact slider + glass nav)</option>
             <option value="super-service" className="text-slate-900">Template: Super Service — HVAC/plumbing multi-trade</option>
             <option value="renovations" className="text-slate-900">Template: Renovations — Parallax, particles, portfolio feed</option>
+            <option value="creator-membership" className="text-slate-900">Template: Content Creator / Membership Platform</option>
           </select>
           <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={phone} onChange={(e)=>setPhone(e.target.value)} placeholder="Phone" />
           <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={city} onChange={(e)=>setCity(e.target.value)} placeholder="City" />

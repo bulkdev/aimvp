@@ -66,7 +66,7 @@ Generate a professional website content JSON for this local business:
 
 Company Name: ${intake.companyName}
 Business Description: ${intake.businessDescription}
-Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; plumbing-flow = compact slider hero + glass nav; super-service = multi-trade HVAC/plumbing style with service areas; renovations = parallax / portfolio showcase for remodel & GC)
+Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; plumbing-flow = compact slider hero + glass nav; super-service = multi-trade HVAC/plumbing style with service areas; renovations = parallax / portfolio showcase for remodel & GC; creator-membership = Patreon-style creator platform with paywall + reels)
 Source Link (optional): ${intake.sourceLink || "N/A"}
 ${optionals}
 Booking: ${intake.bookingEnabled ? "Yes" : "No"}
@@ -142,6 +142,15 @@ Trade-specific (home & commercial renovations / general contractor): Premium, co
 - services: realistic lanes — e.g. design & planning, residential remodels, commercial build-outs / TI, kitchens & baths, additions, finishing & interiors.
 - about: describe a real process (discovery → scope → build) without fake awards or certifications not in intake.
 - assets: include rich portfolio imagery via portfolioProjects or portfolioEntries when possible.`;
+  }
+  if (v === "creatorMembership") {
+    return `
+Trade-specific (content creator membership platform): premium, conversion-focused copy with community energy.
+- Hero: creator brand-forward headline + clear member value.
+- Services: use creator offers (exclusive videos, live sessions, community, behind-the-scenes).
+- about: emphasize creator story and why members join/stay.
+- assets.creatorMembership: include monthly/yearly plans, teaser copy, categories/tags, videos, reels, testimonials, and emotes.
+- Keep language authentic and direct, avoid generic enterprise buzzwords.`;
   }
   return "";
 }
@@ -309,6 +318,156 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
         siteStats: MOCK_SITE_STATS,
       },
       theme: pickThemeFromIntake(intake),
+    };
+  }
+
+  if (variant === "creatorMembership") {
+    const creatorName = intake.creatorName?.trim() || name;
+    const now = new Date().toISOString();
+    return {
+      brandName: name,
+      tagline: "Exclusive videos, community, and creator access",
+      hero: {
+        title: `Join ${creatorName}'s Creator Membership`,
+        subtitle: `Get premium full-length content, member-only drops, and direct community access. Watch free reels now and unlock the full library anytime.`,
+        ctaText: "Join Membership",
+        ctaSecondaryText: "Watch free reels",
+      },
+      services: [
+        {
+          title: "Member-only full videos",
+          description: "Unlock in-depth episodes, classes, and behind-the-scenes releases.",
+          icon: "Lock",
+        },
+        {
+          title: "Live creator sessions",
+          description: "Monthly livestreams, Q&A, and requests from members.",
+          icon: "Video",
+        },
+        {
+          title: "Community access",
+          description: "Join comments and reactions with emotes inside the private platform.",
+          icon: "Users",
+        },
+      ],
+      about: {
+        heading: `Why fans join ${creatorName}`,
+        body: `${creatorName} publishes consistent premium content and keeps the community close. Members get early access, longer edits, and deeper context you will not find on public feeds.\n\nThis membership is built for people who want to learn, stay inspired, and support independent creator work.`,
+        highlights: ["New drops every week", "Member-first access", "Creator-led community"],
+      },
+      faqs: [
+        { question: "What do members unlock?", answer: "Full videos, private drops, and member-only discussions." },
+        { question: "Can I cancel anytime?", answer: "Yes. You can cancel monthly or yearly plans any time from your account." },
+        { question: "Are free reels available?", answer: "Yes. Public reels stay open so you can preview content before subscribing." },
+        { question: "Do you support yearly billing?", answer: "Yes. Yearly plans are available with a discount over monthly pricing." },
+        { question: "How do I track watched content?", answer: "Your account tracks watch progress and marks videos complete as you watch." },
+      ],
+      contact: {
+        heading: "Have a question?",
+        subheading: "Reach out and our team will help with billing, access, or account support.",
+      },
+      assets: {
+        heroSlides: intake.importedHeroSlides,
+        portfolioProjects: intake.importedPortfolioProjects,
+        siteStats: [
+          { value: "1.2K+", label: "Active members" },
+          { value: "240+", label: "Premium videos" },
+          { value: "4.9", label: "Avg member rating" },
+          { value: "95%", label: "Monthly retention" },
+        ],
+        creatorMembership: {
+          creatorName,
+          creatorTagline: "Create more. Connect deeper. Grow together.",
+          creatorBio: `${creatorName} publishes high-value premium content for members who want deeper access.`,
+          contentType: intake.creatorContentType || "other",
+          stickyCtaText: "Join Membership",
+          teaserHeadline: "Preview the latest reels and unlock full episodes.",
+          paywallTitle: "Subscribe to unlock full videos",
+          paywallSubtitle: "Members get instant access to the complete library and private community.",
+          monthlyPlan: {
+            id: "monthly",
+            name: "Monthly",
+            priceUsd: 15,
+            billingInterval: "month",
+            description: "Full access, cancel anytime",
+          },
+          yearlyPlan: {
+            id: "yearly",
+            name: "Yearly",
+            priceUsd: 144,
+            billingInterval: "year",
+            description: "Save 20% with annual billing",
+          },
+          testimonials: [
+            { id: "t1", name: "Ari M.", quote: "Best creator membership I have joined. The long-form drops are worth it." },
+            { id: "t2", name: "Mina R.", quote: "Love the community and direct creator replies in comments." },
+            { id: "t3", name: "Jordan K.", quote: "The yearly plan paid for itself in the first month." },
+          ],
+          categories: ["Behind the scenes", "Deep dives", "Live sessions", "Q&A"],
+          tags: ["creator", "exclusive", "members", "community"],
+          videos: [
+            {
+              id: "vid-1",
+              title: "Masterclass: Building a Creator Business",
+              description: "A practical deep dive on content systems, monetization, and audience trust.",
+              fullVideoUrl: "",
+              thumbnailUrl: "",
+              durationSec: 2580,
+              views: 3421,
+              engagementScore: 91,
+              visibility: "member",
+              category: "Deep dives",
+              tags: ["business", "creator", "systems"],
+              createdAt: now,
+            },
+            {
+              id: "vid-2",
+              title: "Weekly Behind The Scenes #12",
+              description: "Production workflow, edits, and creative decisions from this week.",
+              fullVideoUrl: "",
+              thumbnailUrl: "",
+              durationSec: 1320,
+              views: 1880,
+              engagementScore: 84,
+              visibility: "member",
+              category: "Behind the scenes",
+              tags: ["workflow", "editing"],
+              createdAt: now,
+            },
+          ],
+          reels: [
+            {
+              id: "reel-1",
+              videoId: "vid-1",
+              title: "3 growth mistakes creators make",
+              previewVideoUrl: "",
+              thumbnailUrl: "",
+              durationSec: 44,
+              createdAt: now,
+            },
+            {
+              id: "reel-2",
+              videoId: "vid-2",
+              title: "My camera and lighting stack",
+              previewVideoUrl: "",
+              thumbnailUrl: "",
+              durationSec: 37,
+              createdAt: now,
+            },
+          ],
+          emotes: [
+            { code: ":fire:", label: "Fire" },
+            { code: ":clap:", label: "Clap" },
+            { code: ":mindblown:", label: "Mind blown" },
+          ],
+        },
+      },
+      theme: {
+        ...pickThemeFromIntake(intake),
+        primaryColor: "#0b1020",
+        secondaryColor: "#131a2c",
+        accentColor: "#7c3aed",
+      },
     };
   }
 

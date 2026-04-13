@@ -12,6 +12,7 @@ import { randomUUID } from "crypto";
 import { Redis } from "@upstash/redis";
 import type { Project, IntakeFormData, GeneratedSiteContent } from "@/types";
 import { isValidCustomerPublicSlug, normalizePublicSlug } from "@/lib/seo";
+import { readLandingShowcase, writeLandingShowcase } from "@/lib/landing-showcase-store";
 
 function isValidProjectBackup(p: unknown): p is Project {
   if (!p || typeof p !== "object") return false;
@@ -330,6 +331,34 @@ export async function importProject(project: Project, options: { ownerId: string
   }
 
   return next;
+}
+
+/** Permanently remove a project, its public slug mapping, and any homepage portfolio entry. */
+export async function deleteProject(id: string): Promise<boolean> {
+  requireWritableStorage();
+  const existing = await getProject(id);
+  if (!existing) return false;
+
+  const redis = getRedis();
+  if (redis) {
+    await syncSlugIndex(existing, { ...existing, publicSlug: undefined });
+    await redis.del(`project:${id}`);
+    await redis.lrem(INDEX_KEY, 0, id);
+  } else {
+    await syncSlugIndex(existing, { ...existing, publicSlug: undefined });
+    const fp = projectPath(id);
+    if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    const index = readIndexFs().filter((x) => x !== id);
+    writeIndexFs(index);
+  }
+
+  const showcase = await readLandingShowcase();
+  const nextShowcase = showcase.filter((s) => s.projectId !== id);
+  if (nextShowcase.length !== showcase.length) {
+    await writeLandingShowcase(nextShowcase);
+  }
+
+  return true;
 }
 
 export async function duplicateProject(sourceId: string): Promise<Project | null> {
