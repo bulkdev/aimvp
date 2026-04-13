@@ -37,6 +37,7 @@ import RenovationsServicesShowcase from "./renovations/RenovationsServicesShowca
 import RenovationsInstagramFeed from "./renovations/RenovationsInstagramFeed";
 import RenovationsParallaxBand from "./renovations/RenovationsParallaxBand";
 import CreatorMembershipTemplate from "./creator/CreatorMembershipTemplate";
+import WindowTintLuxuryTemplate from "./window-tint/WindowTintLuxuryTemplate";
 import { isActiveSubscriber } from "@/lib/creator-membership";
 import type { PublishedSubpageSection, SiteSectionKey } from "@/lib/published-subpages";
 import { publishedNavHref } from "@/lib/published-nav-hrefs";
@@ -348,7 +349,7 @@ export default function SiteTemplate({ project, subpage, publishedBasePath, view
   return (
     <div
       style={{ ...(cssVars as React.CSSProperties), position: "relative" }}
-      className="preview-root"
+      className={`preview-root${variant === "windowTintLuxury" ? " preview-root--window-tint-luxury" : ""}`}
     >
       <SeoAnalytics />
       {/* Google Fonts for the selected theme */}
@@ -465,6 +466,11 @@ export default function SiteTemplate({ project, subpage, publishedBasePath, view
           transform: translateY(-1px) scale(1.03);
           filter: brightness(1.05);
         }
+
+        .preview-root--window-tint-luxury {
+          background: #030306 !important;
+          color: #e4e4e7;
+        }
       `}</style>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
@@ -475,6 +481,8 @@ export default function SiteTemplate({ project, subpage, publishedBasePath, view
           publishedBasePath={publishedBasePath}
           isSubscriber={isActiveSubscriber(project, viewerUserId)}
         />
+      ) : variant === "windowTintLuxury" ? (
+        <WindowTintLuxuryTemplate project={project} />
       ) : (
         <>
           {variant === "renovations" ? (
@@ -553,17 +561,19 @@ export default function SiteTemplate({ project, subpage, publishedBasePath, view
           </ScrollReveal>
         </>
       )}
-      <a href={chatHref} className="chat-fab" aria-label="Open chat/contact">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M7 9.5h10M7 13h6m-7 7l-3 1.5L4.5 18H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7Z"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </a>
+      {variant !== "windowTintLuxury" ? (
+        <a href={chatHref} className="chat-fab" aria-label="Open chat/contact">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M7 9.5h10M7 13h6m-7 7l-3 1.5L4.5 18H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </a>
+      ) : null}
     </div>
   );
 }

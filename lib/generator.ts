@@ -66,7 +66,7 @@ Generate a professional website content JSON for this local business:
 
 Company Name: ${intake.companyName}
 Business Description: ${intake.businessDescription}
-Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; plumbing-flow = compact slider hero + glass nav; super-service = multi-trade HVAC/plumbing style with service areas; renovations = parallax / portfolio showcase for remodel & GC; creator-membership = Patreon-style creator platform with paywall + reels)
+Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; plumbing-flow = compact slider hero + glass nav; super-service = multi-trade HVAC/plumbing style with service areas; renovations = parallax / portfolio showcase for remodel & GC; creator-membership = Patreon-style creator platform with paywall + reels; window-tint-luxury = premium dark automotive film site with simulator + booking wizard)
 Source Link (optional): ${intake.sourceLink || "N/A"}
 ${optionals}
 Booking: ${intake.bookingEnabled ? "Yes" : "No"}
@@ -142,6 +142,14 @@ Trade-specific (home & commercial renovations / general contractor): Premium, co
 - services: realistic lanes — e.g. design & planning, residential remodels, commercial build-outs / TI, kitchens & baths, additions, finishing & interiors.
 - about: describe a real process (discovery → scope → build) without fake awards or certifications not in intake.
 - assets: include rich portfolio imagery via portfolioProjects or portfolioEntries when possible.`;
+  }
+  if (v === "windowTintLuxury") {
+    return `
+Trade-specific (automotive window tint / paint protection adjacent): ultra-premium, confident, studio-grade tone — never generic landing-page copy.
+- Hero: cinematic, short headline about clarity, heat rejection, privacy, and craftsmanship (no fake awards).
+- services: exactly four lanes when possible — full vehicle film, partial / rear package, windshield brow strip, ceramic IR upgrade — with honest scope descriptions.
+- about: bay environment, contamination control, pattern cutting, cure times, warranty language — realistic, no invented certifications.
+- assets.siteStats: four believable stats (e.g. vehicles tinted, years in business, average rating, film brands carried) using only plausible numbers — never fake review counts tied to real platforms unless provided in intake.`;
   }
   if (v === "creatorMembership") {
     return `
@@ -318,6 +326,89 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
         siteStats: MOCK_SITE_STATS,
       },
       theme: pickThemeFromIntake(intake),
+    };
+  }
+
+  if (variant === "windowTintLuxury") {
+    const tintServices: ServiceItem[] = [
+      {
+        title: "Full vehicle ceramic",
+        description: `Every glass surface measured, computer-cut, and installed in a filtered bay so dust never gets trapped under your film in ${city}.`,
+        icon: "Car",
+      },
+      {
+        title: "Rear privacy package",
+        description: "Rear half or full privacy stacks matched to factory aesthetics on SUVs, wagons, and crew cabs.",
+        icon: "Layers",
+      },
+      {
+        title: "Windshield brow strip",
+        description: "Legal upper visor bands that kill dash glare and eye fatigue without sacrificing forward vision.",
+        icon: "Sun",
+      },
+      {
+        title: "Ceramic IR upgrade",
+        description: "Multi-stack nano ceramics that reject infrared heat while staying neutral on the glass — no purple haze.",
+        icon: "Zap",
+      },
+    ];
+    return {
+      brandName: name,
+      tagline: `Ceramic window film · ${city}`,
+      hero: {
+        title: `Heat rejected. Clarity preserved.`,
+        subtitle: `${name} installs precision-cut ceramic films with factory-smooth edges, spotless interiors, and consultative VLT guidance for drivers across ${city}.`,
+        ctaText: "Book installation",
+        ctaSecondaryText: "Try the simulator",
+      },
+      services: tintServices,
+      about: {
+        heading: `Bay-built quality`,
+        body: `We treat every vehicle like a limited build — lights down, slips dialed, patterns verified before a blade touches the glass.\n\nOur installers focus on shrink discipline, edge sealing, and cure schedules so your film lays flat and stays quiet for years. Ask about ceramic IR stacks if you want cabin comfort without going darker than you need.\n\nServing ${city} and nearby — book a consult and we'll recommend legal, beautiful VLT options for your daily route.`,
+        highlights: ["Dust-controlled install bay", "Computer-cut patterns", "Ceramic IR options"],
+      },
+      faqs: [
+        {
+          question: "How long does install take?",
+          answer: "Most sedans finish same day. Larger SUVs or full ceramic packages may run longer — we'll quote time at drop-off.",
+        },
+        {
+          question: "What is ceramic film?",
+          answer: "Ceramic layers target infrared heat and UV without metallic interference, so electronics and clarity stay clean.",
+        },
+        {
+          question: "Is darker always illegal?",
+          answer: "Laws vary by state for front sides and windshields. We'll recommend compliant stacks and document what goes where.",
+        },
+        {
+          question: "When can I roll windows down?",
+          answer: "Follow the cure window we provide — usually a few days — so edges seal perfectly.",
+        },
+        {
+          question: "Do you remove old film?",
+          answer: "Yes. Old adhesive is stripped safely so new film bonds to pristine glass.",
+        },
+      ],
+      contact: {
+        heading: "Book a consult",
+        subheading: `Call or email — we'll confirm vehicle class, film goals, and timeline for ${city}.`,
+      },
+      assets: {
+        heroSlides: intake.importedHeroSlides,
+        portfolioProjects: intake.importedPortfolioProjects,
+        siteStats: [
+          { value: "3.8K+", label: "Vehicles tinted" },
+          { value: "4.9", label: "Star average" },
+          { value: "11", label: "Years in the bay" },
+          { value: "100%", label: "Pattern-checked edges" },
+        ],
+      },
+      theme: {
+        ...pickThemeFromIntake(intake),
+        primaryColor: "#050508",
+        secondaryColor: "#0c0c12",
+        accentColor: "#8b5cf6",
+      },
     };
   }
 
@@ -528,6 +619,32 @@ function resolveServiceArea(intake: IntakeFormData): string {
 function deriveServices(intake: IntakeFormData, name: string): ServiceItem[] {
   const lower = intake.businessDescription.toLowerCase();
   const v = resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName);
+
+  if (v === "windowTintLuxury") {
+    const area = intake.city || "your area";
+    return [
+      {
+        title: "Full vehicle ceramic",
+        description: `Complete glass coverage with computer-cut patterns and a contamination-controlled bay so every edge lays clean around ${area}.`,
+        icon: "Car",
+      },
+      {
+        title: "Rear privacy package",
+        description: "Matched rear stacks for SUVs, wagons, and trucks — factory aesthetic with dialed VLT.",
+        icon: "Layers",
+      },
+      {
+        title: "Windshield brow strip",
+        description: "Legal visor bands that cut dash glare and eye fatigue without sacrificing forward vision.",
+        icon: "Sun",
+      },
+      {
+        title: "Ceramic IR upgrade",
+        description: "Nano-ceramic stacks that reject infrared heat while staying neutral on the glass.",
+        icon: "Zap",
+      },
+    ];
+  }
 
   if (v === "renovations") {
     return [

@@ -14,7 +14,9 @@ export type SiteTemplateChoice =
   /** Renovation / GC: parallax sections, particle hero, Instagram-style portfolio grid */
   | "renovations"
   /** Patreon-style creator site with gated member content. */
-  | "creator-membership";
+  | "creator-membership"
+  /** Premium dark automotive UI: tint simulator, 3D service cards, before/after, booking wizard. */
+  | "window-tint-luxury";
 
 export interface IntakeFormData {
   companyName: string;
@@ -165,6 +167,17 @@ export interface GeneratedSiteContent {
     heroTaglineLead?: string;
     /** Browser tab / bookmark icon (PNG, ICO, or SVG data URL). Set in site admin. */
     faviconDataUrl?: string;
+    /**
+     * Luxury window-tint template: full-screen hero background video URL (mp4/webm/ogg).
+     * If unset, the first video URL in `heroSlides` is used when present.
+     */
+    tintHeroVideoUrl?: string;
+    /** Poster / fallback still shown under video and while the video loads (image URL or data URL). */
+    tintHeroVideoPosterUrl?: string;
+    /** Luxury window-tint template: real “before” photo for the comparison slider (untinted / prior state). */
+    tintBeforeImageUrl?: string;
+    /** Luxury window-tint template: real “after” photo (tinted / finished). */
+    tintAfterImageUrl?: string;
     /**
      * Home page SEO: browser title, meta description, social share image, optional keywords.
      * Unset fields fall back to generated defaults from business name, location, and services.

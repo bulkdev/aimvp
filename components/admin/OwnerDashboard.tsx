@@ -261,6 +261,12 @@ export default function OwnerDashboard({ project }: Props) {
   const [heroSubtitle, setHeroSubtitle] = useState(project.content.hero.subtitle);
   const [heroTaglineLead, setHeroTaglineLead] = useState(() => initialHeroTaglineLead(project));
   const [heroSlides, setHeroSlides] = useState<string[]>(project.content.assets?.heroSlides ?? []);
+  const [tintHeroVideoUrl, setTintHeroVideoUrl] = useState(project.content.assets?.tintHeroVideoUrl ?? "");
+  const [tintHeroVideoPosterUrl, setTintHeroVideoPosterUrl] = useState(
+    project.content.assets?.tintHeroVideoPosterUrl ?? ""
+  );
+  const [tintBeforeImageUrl, setTintBeforeImageUrl] = useState(project.content.assets?.tintBeforeImageUrl ?? "");
+  const [tintAfterImageUrl, setTintAfterImageUrl] = useState(project.content.assets?.tintAfterImageUrl ?? "");
   const [theme, setTheme] = useState<SiteTheme>(project.content.theme);
   const [layoutVariant, setLayoutVariant] = useState<"standard" | "services-first" | "about-first">(
     project.content.assets?.layoutVariant ?? "standard"
@@ -438,8 +444,19 @@ export default function OwnerDashboard({ project }: Props) {
     setSaving(true);
     setMsg("");
     try {
-      const { faviconDataUrl: _prevFav, ...assetRest } = project.content.assets ?? {};
+      const {
+        faviconDataUrl: _prevFav,
+        tintHeroVideoUrl: _omitTintV,
+        tintHeroVideoPosterUrl: _omitTintP,
+        tintBeforeImageUrl: _omitTintB,
+        tintAfterImageUrl: _omitTintA,
+        ...assetRest
+      } = project.content.assets ?? {};
       void _prevFav;
+      void _omitTintV;
+      void _omitTintP;
+      void _omitTintB;
+      void _omitTintA;
       const nextIntake = { ...project.intake, companyName, siteTemplate, customDomain, phone, city, state, email, address };
       const logoTrim = logoDataUrl.trim();
       if (logoTrim) nextIntake.logoDataUrl = logoTrim;
@@ -462,6 +479,10 @@ export default function OwnerDashboard({ project }: Props) {
             ...assetRest,
             heroTaglineLead: heroTaglineLead.trim(),
             heroSlides,
+            ...(tintHeroVideoUrl.trim() ? { tintHeroVideoUrl: tintHeroVideoUrl.trim() } : {}),
+            ...(tintHeroVideoPosterUrl.trim() ? { tintHeroVideoPosterUrl: tintHeroVideoPosterUrl.trim() } : {}),
+            ...(tintBeforeImageUrl.trim() ? { tintBeforeImageUrl: tintBeforeImageUrl.trim() } : {}),
+            ...(tintAfterImageUrl.trim() ? { tintAfterImageUrl: tintAfterImageUrl.trim() } : {}),
             serviceCardImages: serviceImages,
             socialLinks: {
               facebook: facebookUrl.trim(),
@@ -643,6 +664,7 @@ export default function OwnerDashboard({ project }: Props) {
               <option value="super-service" className="text-slate-900">Template: Super Service — HVAC/plumbing</option>
               <option value="renovations" className="text-slate-900">Template: Renovations — Parallax, particles, portfolio</option>
               <option value="creator-membership" className="text-slate-900">Template: Content Creator / Membership Platform</option>
+              <option value="window-tint-luxury" className="text-slate-900">Template: Window tint — Luxury cinematic</option>
             </select>
             <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
             <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" />
@@ -1034,6 +1056,93 @@ export default function OwnerDashboard({ project }: Props) {
             ))}
           </div>
         </section>
+
+        {siteTemplate === "window-tint-luxury" ? (
+          <section className="bg-white/5 border border-violet-500/25 rounded-xl p-4 space-y-4">
+            <p className="text-sm font-medium text-violet-200">Luxury tint — hero video &amp; before/after</p>
+            <p className="text-xs text-white/50">
+              Paste an mp4/webm URL for the looping hero. Upload poster + real before/after shots, or rely on the first
+              video URL in hero slides + first two portfolio photos.
+            </p>
+            <input
+              className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm"
+              value={tintHeroVideoUrl}
+              onChange={(e) => setTintHeroVideoUrl(e.target.value)}
+              placeholder="Hero video URL (https://…/loop.mp4)"
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-white/60 mb-1">Poster (optional)</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-xs"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    try {
+                      setTintHeroVideoPosterUrl(await fileToCompressedDataUrl(f, { maxEdge: 2560, quality: 0.88 }));
+                    } catch (err) {
+                      setMsg(err instanceof Error ? err.message : "Invalid image.");
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  className="w-full mt-2 bg-white/5 border border-white/15 rounded-lg px-2 py-1.5 text-xs"
+                  value={tintHeroVideoPosterUrl}
+                  onChange={(e) => setTintHeroVideoPosterUrl(e.target.value)}
+                  placeholder="Or image URL"
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs text-white/60">Before / after (both = real comparison mode)</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-xs block"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    try {
+                      setTintBeforeImageUrl(await fileToCompressedDataUrl(f, { maxEdge: 2560, quality: 0.88 }));
+                    } catch (err) {
+                      setMsg(err instanceof Error ? err.message : "Invalid image.");
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-xs block"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    try {
+                      setTintAfterImageUrl(await fileToCompressedDataUrl(f, { maxEdge: 2560, quality: 0.88 }));
+                    } catch (err) {
+                      setMsg(err instanceof Error ? err.message : "Invalid image.");
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  className="w-full bg-white/5 border border-white/15 rounded-lg px-2 py-1.5 text-xs"
+                  value={tintBeforeImageUrl}
+                  onChange={(e) => setTintBeforeImageUrl(e.target.value)}
+                  placeholder="Before image URL (optional)"
+                />
+                <input
+                  className="w-full bg-white/5 border border-white/15 rounded-lg px-2 py-1.5 text-xs"
+                  value={tintAfterImageUrl}
+                  onChange={(e) => setTintAfterImageUrl(e.target.value)}
+                  placeholder="After image URL (optional)"
+                />
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">

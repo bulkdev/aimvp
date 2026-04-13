@@ -258,6 +258,12 @@ export default function AdminEditor({ project }: Props) {
   const [heroSubtitle, setHeroSubtitle] = useState(project.content.hero.subtitle);
   const [heroTaglineLead, setHeroTaglineLead] = useState(() => initialHeroTaglineLead(project));
   const [heroSlides, setHeroSlides] = useState<string[]>(project.content.assets?.heroSlides ?? []);
+  const [tintHeroVideoUrl, setTintHeroVideoUrl] = useState(project.content.assets?.tintHeroVideoUrl ?? "");
+  const [tintHeroVideoPosterUrl, setTintHeroVideoPosterUrl] = useState(
+    project.content.assets?.tintHeroVideoPosterUrl ?? ""
+  );
+  const [tintBeforeImageUrl, setTintBeforeImageUrl] = useState(project.content.assets?.tintBeforeImageUrl ?? "");
+  const [tintAfterImageUrl, setTintAfterImageUrl] = useState(project.content.assets?.tintAfterImageUrl ?? "");
   const [theme, setTheme] = useState<SiteTheme>(project.content.theme);
   const [layoutVariant, setLayoutVariant] = useState<"standard" | "services-first" | "about-first">(
     project.content.assets?.layoutVariant ?? "standard"
@@ -418,6 +424,14 @@ export default function AdminEditor({ project }: Props) {
       else delete nextIntake.navbarLogoDataUrl;
       nextIntake.navbarLogoHeightPx = Math.min(96, Math.max(24, Math.round(Number(navbarLogoHeightPx) || 40)));
 
+      const {
+        tintHeroVideoUrl: _omitTintVideo,
+        tintHeroVideoPosterUrl: _omitTintPoster,
+        tintBeforeImageUrl: _omitTintBefore,
+        tintAfterImageUrl: _omitTintAfter,
+        ...restAssets
+      } = project.content.assets ?? {};
+
       const payload = {
         intake: nextIntake,
         content: {
@@ -431,9 +445,13 @@ export default function AdminEditor({ project }: Props) {
             subtitle: heroSubtitle,
           },
           assets: {
-            ...project.content.assets,
+            ...restAssets,
             heroTaglineLead: heroTaglineLead.trim(),
             heroSlides,
+            ...(tintHeroVideoUrl.trim() ? { tintHeroVideoUrl: tintHeroVideoUrl.trim() } : {}),
+            ...(tintHeroVideoPosterUrl.trim() ? { tintHeroVideoPosterUrl: tintHeroVideoPosterUrl.trim() } : {}),
+            ...(tintBeforeImageUrl.trim() ? { tintBeforeImageUrl: tintBeforeImageUrl.trim() } : {}),
+            ...(tintAfterImageUrl.trim() ? { tintAfterImageUrl: tintAfterImageUrl.trim() } : {}),
             serviceCardImages: serviceImages,
             socialLinks: {
               facebook: facebookUrl.trim(),
@@ -669,6 +687,7 @@ export default function AdminEditor({ project }: Props) {
             <option value="super-service" className="text-slate-900">Template: Super Service — HVAC/plumbing multi-trade</option>
             <option value="renovations" className="text-slate-900">Template: Renovations — Parallax, particles, portfolio feed</option>
             <option value="creator-membership" className="text-slate-900">Template: Content Creator / Membership Platform</option>
+            <option value="window-tint-luxury" className="text-slate-900">Template: Window tint — Luxury cinematic</option>
           </select>
           <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={phone} onChange={(e)=>setPhone(e.target.value)} placeholder="Phone" />
           <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={city} onChange={(e)=>setCity(e.target.value)} placeholder="City" />
@@ -1247,6 +1266,119 @@ export default function AdminEditor({ project }: Props) {
             ))}
           </div>
         </div>
+
+        {siteTemplate === "window-tint-luxury" ? (
+          <div className="bg-white/5 border border-violet-500/25 rounded-xl p-4 space-y-4">
+            <div>
+              <p className="text-sm font-medium text-violet-200">Luxury tint — hero video &amp; comparison</p>
+              <p className="text-xs text-white/50 mt-1">
+                Host a short looping <strong className="text-white/70">mp4/webm</strong> (CDN or direct URL). Poster and
+                stills can be uploaded or pasted. You can also put a video URL as the{" "}
+                <strong className="text-white/70">first hero slide</strong> and still images after it — the template
+                picks them up automatically.
+              </p>
+            </div>
+            <label className="block text-xs text-white/70">
+              Hero background video URL
+              <input
+                className="mt-1 w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm"
+                value={tintHeroVideoUrl}
+                onChange={(e) => setTintHeroVideoUrl(e.target.value)}
+                placeholder="https://cdn.example.com/hero-loop.mp4"
+              />
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-white/70 mb-1">Video poster (still frame while loading)</p>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="text-xs"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      try {
+                        setTintHeroVideoPosterUrl(await fileToCompressedDataUrl(f, { maxEdge: 2560, quality: 0.88 }));
+                      } catch (err) {
+                        setMessage(err instanceof Error ? err.message : "Invalid image.");
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                  <input
+                    className="flex-1 min-w-[140px] bg-white/5 border border-white/15 rounded-lg px-2 py-1.5 text-xs"
+                    value={tintHeroVideoPosterUrl}
+                    onChange={(e) => setTintHeroVideoPosterUrl(e.target.value)}
+                    placeholder="Or paste image URL / data URL"
+                  />
+                </div>
+                {tintHeroVideoPosterUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={tintHeroVideoPosterUrl} alt="" className="mt-2 h-20 rounded-lg border border-white/10 object-cover" />
+                ) : null}
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-white/70 mb-1">Before photo (slider — untinted)</p>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="text-xs"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        try {
+                          setTintBeforeImageUrl(await fileToCompressedDataUrl(f, { maxEdge: 2560, quality: 0.88 }));
+                        } catch (err) {
+                          setMessage(err instanceof Error ? err.message : "Invalid image.");
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                    <input
+                      className="flex-1 min-w-[120px] bg-white/5 border border-white/15 rounded-lg px-2 py-1.5 text-xs"
+                      value={tintBeforeImageUrl}
+                      onChange={(e) => setTintBeforeImageUrl(e.target.value)}
+                      placeholder="URL"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-white/70 mb-1">After photo (slider — tinted)</p>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="text-xs"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        try {
+                          setTintAfterImageUrl(await fileToCompressedDataUrl(f, { maxEdge: 2560, quality: 0.88 }));
+                        } catch (err) {
+                          setMessage(err instanceof Error ? err.message : "Invalid image.");
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                    <input
+                      className="flex-1 min-w-[120px] bg-white/5 border border-white/15 rounded-lg px-2 py-1.5 text-xs"
+                      value={tintAfterImageUrl}
+                      onChange={(e) => setTintAfterImageUrl(e.target.value)}
+                      placeholder="URL"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-white/40">
+                  Set both before and after for a true photo comparison (lighter grading). Otherwise the first two photos
+                  in project #1 in portfolio still work.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div className="bg-white/5 border border-white/10 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">

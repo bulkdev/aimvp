@@ -4,11 +4,34 @@ import type { SiteTemplateChoice } from "@/types";
  * Which visual / copy template to use for the generated site.
  * Extend with new trades (HVAC, electrical, etc.) as you add layouts.
  */
-export type SiteTemplateVariant = "default" | "plumbing" | "superService" | "renovations" | "creatorMembership";
+export type SiteTemplateVariant =
+  | "default"
+  | "plumbing"
+  | "superService"
+  | "renovations"
+  | "creatorMembership"
+  | "windowTintLuxury";
 
 /** Keyword-based inference when the user leaves template on "auto". */
 export function inferSiteVariant(description: string, companyName = ""): SiteTemplateVariant {
   const lower = `${description} ${companyName}`.toLowerCase();
+
+  const windowTintSignals = [
+    "window tint",
+    "window-tint",
+    "auto tint",
+    "car tint",
+    "vehicle tint",
+    "automotive tint",
+    "ceramic tint",
+    "tint shop",
+    "privacy film",
+    "automotive film",
+    "glass tint",
+  ];
+  for (const word of windowTintSignals) {
+    if (lower.includes(word)) return "windowTintLuxury";
+  }
 
   const superServiceSignals = [
     "hvac",
@@ -107,6 +130,7 @@ export function resolveSiteVariant(
   if (choice === "super-service") return "superService";
   if (choice === "renovations") return "renovations";
   if (choice === "creator-membership") return "creatorMembership";
+  if (choice === "window-tint-luxury") return "windowTintLuxury";
   if (choice === "plumbing" || choice === "plumbing-split" || choice === "plumbing-boxed" || choice === "plumbing-flow") {
     return "plumbing";
   }
