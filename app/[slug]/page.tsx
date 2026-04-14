@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProjectByPublicSlug } from "@/lib/store";
-import { absoluteUrl, buildPublishedBasePath, isReservedPublicSlug, publicPagesEnabled } from "@/lib/seo";
+import { absoluteUrl, isReservedPublicSlug, publicPagesEnabled } from "@/lib/seo";
+import { resolvePublishedBasePathForHost } from "@/lib/published-base-path";
 import { siteFaviconIcons } from "@/lib/favicon-metadata";
 import { resolveHomePageSeo } from "@/lib/site-seo-metadata";
 
@@ -20,11 +22,16 @@ export default async function CustomerSlugPage({ params }: Props) {
   if (isReservedPublicSlug(slug)) notFound();
   const project = await getProjectByPublicSlug(slug);
   if (!project) notFound();
+  const h = await headers();
+  const publishedBasePath = resolvePublishedBasePathForHost(
+    project,
+    h.get("x-forwarded-host") || h.get("host")
+  );
   const session = await auth();
   return (
     <SiteTemplate
       project={project}
-      publishedBasePath={buildPublishedBasePath(project)}
+      publishedBasePath={publishedBasePath}
       viewerUserId={session?.user?.id}
     />
   );

@@ -1,9 +1,11 @@
 import { notFound, redirect } from "next/navigation";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProject } from "@/lib/store";
 import { absoluteUrl, buildPublishedBasePath, publicPagesEnabled } from "@/lib/seo";
+import { resolvePublishedBasePathForHost } from "@/lib/published-base-path";
 import { siteFaviconIcons } from "@/lib/favicon-metadata";
 import { resolveHomePageSeo } from "@/lib/site-seo-metadata";
 
@@ -22,11 +24,16 @@ export default async function PublishedSitePage({ params }: Props) {
   if (project.publicSlug?.trim()) {
     redirect(buildPublishedBasePath(project));
   }
+  const h = await headers();
+  const publishedBasePath = resolvePublishedBasePathForHost(
+    project,
+    h.get("x-forwarded-host") || h.get("host")
+  );
   const session = await auth();
   return (
     <SiteTemplate
       project={project}
-      publishedBasePath={buildPublishedBasePath(project)}
+      publishedBasePath={publishedBasePath}
       viewerUserId={session?.user?.id}
     />
   );

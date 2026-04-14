@@ -38,14 +38,15 @@ export function publishedNavHref(publishedBasePath: string | undefined, hash: Na
   if (!publishedBasePath) {
     return `#${hash}`;
   }
+  const base = publishedBasePath === "/" ? "" : publishedBasePath.replace(/\/+$/, "");
   if (hash === "hero") {
-    return publishedBasePath;
+    return base || "/";
   }
   const segment = HASH_TO_SEGMENT[hash];
   if (!segment) {
-    return `${publishedBasePath}#${hash}`;
+    return `${base || "/"}#${hash}`;
   }
-  return `${publishedBasePath}/${segment}`;
+  return `${base}/${segment}` || `/${segment}`;
 }
 
 export function publishedNavHrefFromProject(project: Pick<Project, "id" | "publicSlug">, hash: NavHash): string {

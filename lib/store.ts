@@ -12,6 +12,7 @@ import { randomUUID } from "crypto";
 import { Redis } from "@upstash/redis";
 import type { Project, IntakeFormData, GeneratedSiteContent } from "@/types";
 import { isValidCustomerPublicSlug, normalizePublicSlug } from "@/lib/seo";
+import { normalizeCustomDomain } from "@/lib/custom-domain";
 import { readLandingShowcase, writeLandingShowcase } from "@/lib/landing-showcase-store";
 
 function isValidProjectBackup(p: unknown): p is Project {
@@ -470,4 +471,17 @@ export async function getProjectByPublicSlug(slug: string): Promise<Project | nu
   const id = await getOwnerIdForSlug(normalized);
   if (!id) return null;
   return getProject(id);
+}
+
+/** Resolve a site by custom domain host (example: `client.com` or `www.client.com`). */
+export async function getProjectByCustomDomain(host: string): Promise<Project | null> {
+  const normalized = normalizeCustomDomain(host);
+  if (!normalized) return null;
+  const projects = await listProjects();
+  for (const p of projects) {
+    const d = normalizeCustomDomain(p.intake.customDomain || "");
+    if (!d) continue;
+    if (d === normalized) return p;
+  }
+  return null;
 }

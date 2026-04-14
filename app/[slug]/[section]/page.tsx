@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import SiteTemplate from "@/components/template/SiteTemplate";
 import { getProjectByPublicSlug } from "@/lib/store";
-import { buildPublishedBasePath, isReservedPublicSlug, publicPagesEnabled } from "@/lib/seo";
+import { isReservedPublicSlug, publicPagesEnabled } from "@/lib/seo";
+import { resolvePublishedBasePathForHost } from "@/lib/published-base-path";
 import { buildSubpageMetadata } from "@/lib/subpage-metadata";
 import { isSubpagePathSegment, pathSegmentToSection } from "@/lib/published-subpages";
 
@@ -25,13 +27,18 @@ export default async function PublishedSubpageBySlug({ params }: Props) {
   const key = pathSegmentToSection(section);
   if (key === "booking" && !project.intake.bookingEnabled) notFound();
   if (key === "payment" && !project.intake.paymentEnabled) notFound();
+  const h = await headers();
+  const publishedBasePath = resolvePublishedBasePathForHost(
+    project,
+    h.get("x-forwarded-host") || h.get("host")
+  );
   const session = await auth();
 
   return (
     <SiteTemplate
       project={project}
       subpage={key}
-      publishedBasePath={buildPublishedBasePath(project)}
+      publishedBasePath={publishedBasePath}
       viewerUserId={session?.user?.id}
     />
   );
