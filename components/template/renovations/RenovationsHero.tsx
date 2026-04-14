@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import type { GeneratedSiteContent, IntakeFormData } from "@/types";
 import { applyIntakeLocationToCopy, intakeLocationLine } from "@/lib/location";
-import { RENO_TILE_STYLE } from "./RenovationsNavbar";
+import { renoParallaxTileStyle } from "./RenovationsNavbar";
 
 const DEFAULT_SLIDES: { src: string; alt: string }[] = [
   {
@@ -26,7 +26,6 @@ const DEFAULT_SLIDES: { src: string; alt: string }[] = [
 ];
 
 const ROTATE_MS = 6000;
-const GREEN = "#1a4d3e";
 
 export default function RenovationsHero({
   content,
@@ -80,9 +79,10 @@ export default function RenovationsHero({
     <section
       ref={sectionRef}
       id="hero"
-      className="relative min-h-[min(100svh,960px)] overflow-hidden bg-[#f3f3f0]"
+      className="relative min-h-[min(100svh,960px)] overflow-hidden"
       style={{
         paddingTop: "calc(var(--reno-header-h, 120px) + 0.25rem)",
+        backgroundColor: "color-mix(in srgb, var(--primary) 4%, #f5f4f2)",
       }}
     >
       {/* Parallax background — custom image (admin) or default subway tile */}
@@ -96,14 +96,24 @@ export default function RenovationsHero({
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={parallaxBgUrl} alt="" className="h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-[#f4f4f2]/45" style={{ opacity: scrim }} />
               <div
-                className="absolute inset-0 bg-gradient-to-b from-white/25 via-[#f3f3f0]/50 to-[#f3f3f0]/85"
-                style={{ opacity: scrim }}
+                className="absolute inset-0"
+                style={{
+                  background: "color-mix(in srgb, var(--secondary) 12%, white 88%)",
+                  opacity: scrim,
+                }}
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, color-mix(in srgb, white 28%, transparent), color-mix(in srgb, var(--primary) 8%, white 92%) 55%, color-mix(in srgb, var(--primary) 14%, white 86%))",
+                  opacity: scrim,
+                }}
               />
             </>
           ) : (
-            <div className="h-full w-full" style={RENO_TILE_STYLE} />
+            <div className="h-full w-full" style={renoParallaxTileStyle()} />
           )}
         </div>
       </motion.div>
@@ -148,7 +158,7 @@ export default function RenovationsHero({
             <div className="mx-auto max-w-xl bg-white p-8 shadow-[0_25px_80px_rgba(0,0,0,0.12)] md:p-10 lg:mx-0 xl:p-12">
               <h1
                 className="text-center text-[clamp(1.35rem,3.2vw,2.15rem)] font-bold uppercase leading-[1.2] tracking-[0.04em] md:tracking-[0.06em]"
-                style={{ fontFamily: "var(--b-font)", color: GREEN }}
+                style={{ fontFamily: "var(--b-font)", color: "var(--accent)" }}
               >
                 {hero.title}
               </h1>
@@ -166,7 +176,7 @@ export default function RenovationsHero({
                 <a
                   href="#contact"
                   className="inline-flex min-w-[10rem] items-center justify-center rounded-md px-6 py-3 text-sm font-bold text-white shadow-md transition-[filter] hover:brightness-110"
-                  style={{ backgroundColor: GREEN }}
+                  style={{ backgroundColor: "var(--accent)" }}
                 >
                   {hero.ctaText}
                 </a>
@@ -174,7 +184,7 @@ export default function RenovationsHero({
                   <a
                     href="#work"
                     className="inline-flex min-w-[10rem] items-center justify-center rounded-md border-2 px-6 py-3 text-sm font-semibold transition-colors hover:bg-neutral-50"
-                    style={{ borderColor: GREEN, color: GREEN }}
+                    style={{ borderColor: "var(--accent)", color: "var(--accent)" }}
                   >
                     {hero.ctaSecondaryText}
                   </a>

@@ -145,6 +145,10 @@ export interface GeneratedSiteContent {
       heroCtaPlacement?: "inline" | "stacked" | "bottom-bar";
       /** Our Work / portfolio: masonry (Pinterest-style), uniform 3-col grid, or single-photo slider. Legacy values normalized at runtime. */
       ourWork?: "masonry" | "grid-3" | "slider" | "cards" | "minimal-grid" | "split-feature";
+      /**
+       * Renovations template: home “Services” block — editorial icon cards (default) or 2-column image cards with a title pill on each image.
+       */
+      renovationsServices?: "editorial-icons" | "image-pill-grid";
     };
     serviceGroups?: {
       title: string;

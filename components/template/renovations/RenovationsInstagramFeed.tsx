@@ -148,20 +148,28 @@ export default function RenovationsInstagramFeed({
   const current = sliderTiles[sliderIdx];
 
   return (
-    <section id="work" className="bg-stone-50 py-20 md:py-28">
+    <section
+      id="work"
+      className="py-20 md:py-28"
+      style={{ background: "color-mix(in srgb, var(--secondary) 5%, #fafaf8)" }}
+    >
       <div className="mx-auto max-w-screen-2xl px-5 md:px-10">
         <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <h2
-              className="text-[clamp(1.75rem,3.5vw,2.75rem)] font-semibold tracking-tight text-stone-900"
-              style={{ fontFamily: "var(--h-font)" }}
+              className="text-[clamp(1.75rem,3.5vw,2.75rem)] font-semibold tracking-tight"
+              style={{ fontFamily: "var(--h-font)", color: "var(--primary)" }}
             >
               Project feed
             </h2>
             {!standalonePortfolioPage ? (
               <Link
                 href={workHref}
-                className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-800 shadow-sm transition hover:border-stone-400 hover:bg-stone-50"
+                className="inline-flex items-center gap-1.5 rounded-full border bg-white px-4 py-2 text-sm font-semibold shadow-sm transition hover:brightness-[0.98]"
+                style={{
+                  borderColor: "color-mix(in srgb, var(--accent) 35%, #d6d3d1)",
+                  color: "var(--primary)",
+                }}
               >
                 See more
                 <span aria-hidden className="translate-y-px">

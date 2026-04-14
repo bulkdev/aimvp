@@ -6,17 +6,17 @@ import { publishedNavHref } from "@/lib/published-nav-hrefs";
 import { resolveNavbarMenuItems } from "@/lib/navbar-menu";
 import { resolveSiteVariant } from "@/lib/siteVariant";
 
-/** Subway tile — matches hero editorial background */
-export const RENO_TILE_STYLE: CSSProperties = {
-  backgroundColor: "#f3f3f0",
-  backgroundImage: `
-    linear-gradient(to right, rgba(30, 77, 58, 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(30, 77, 58, 0.07) 1px, transparent 1px)
-  `,
-  backgroundSize: "26px 26px",
-};
-
-const GREEN = "#1a4d3e";
+/** Subway tile — grid tint follows admin accent; base wash follows primary */
+export function renoParallaxTileStyle(): CSSProperties {
+  return {
+    backgroundColor: "color-mix(in srgb, var(--primary) 5%, #f6f5f3)",
+    backgroundImage: `
+      linear-gradient(to right, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px)
+    `,
+    backgroundSize: "26px 26px",
+  };
+}
 
 function clampNavLogoHeight(px?: number): number {
   const n = typeof px === "number" && Number.isFinite(px) ? px : 40;
@@ -138,7 +138,7 @@ export default function RenovationsNavbar({
       >
         <div
           className="relative min-h-11 py-2 pl-10 pr-12 text-[10px] font-semibold uppercase leading-snug tracking-[0.12em] text-white sm:py-2.5 sm:text-[11px] md:pl-16 md:pr-14"
-          style={{ backgroundColor: GREEN }}
+          style={{ backgroundColor: "var(--accent)" }}
         >
           <p className="text-center leading-snug">
             Now offering: tailored property maintenance services{" "}
@@ -180,7 +180,7 @@ export default function RenovationsNavbar({
             ) : (
               <span
                 className="block truncate text-base font-bold uppercase tracking-tight md:text-lg"
-                style={{ fontFamily: "var(--b-font)", color: GREEN }}
+                style={{ fontFamily: "var(--b-font)", color: "var(--accent)" }}
               >
                 {content.brandName}
               </span>
@@ -193,7 +193,7 @@ export default function RenovationsNavbar({
                 key={`${l.hash}-${idx}`}
                 href={publishedNavHref(publishedBasePath, l.hash)}
                 className="text-[11px] font-semibold uppercase tracking-[0.14em] transition-opacity hover:opacity-70"
-                style={{ color: GREEN }}
+                style={{ color: "var(--accent)" }}
               >
                 {l.label}
               </a>
@@ -205,7 +205,7 @@ export default function RenovationsNavbar({
               <a
                 href={`tel:${phone}`}
                 className="hidden rounded-md border border-current/20 px-3 py-2 text-xs font-semibold sm:inline-flex"
-                style={{ color: GREEN }}
+                style={{ color: "var(--accent)" }}
               >
                 Call
               </a>
@@ -213,14 +213,14 @@ export default function RenovationsNavbar({
             <a
               href={publishedNavHref(publishedBasePath, "contact")}
               className="rounded-md px-3 py-2.5 text-xs font-bold text-white shadow-md transition-[filter] hover:brightness-110 sm:px-4 md:px-5 md:text-sm"
-              style={{ backgroundColor: GREEN }}
+              style={{ backgroundColor: "var(--accent)" }}
             >
               Get a quote
             </a>
             <button
               type="button"
               className="-mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-md lg:hidden sm:-mr-1"
-              style={{ color: GREEN }}
+              style={{ color: "var(--accent)" }}
               aria-expanded={mobileNavOpen}
               aria-controls="reno-mobile-nav"
               aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
@@ -261,7 +261,7 @@ export default function RenovationsNavbar({
                   key={`${l.hash}-${idx}`}
                   href={publishedNavHref(publishedBasePath, l.hash)}
                   className="border-b border-neutral-200 py-3.5 text-[13px] font-semibold uppercase tracking-[0.12em]"
-                  style={{ color: GREEN }}
+                  style={{ color: "var(--accent)" }}
                   onClick={() => setMobileNavOpen(false)}
                 >
                   {l.label}
@@ -271,7 +271,7 @@ export default function RenovationsNavbar({
                 <a
                   href={`tel:${phone}`}
                   className="mt-4 inline-flex items-center justify-center rounded-md border border-current/25 px-4 py-3 text-sm font-semibold"
-                  style={{ color: GREEN }}
+                  style={{ color: "var(--accent)" }}
                   onClick={() => setMobileNavOpen(false)}
                 >
                   Call
@@ -280,7 +280,7 @@ export default function RenovationsNavbar({
               <a
                 href={publishedNavHref(publishedBasePath, "contact")}
                 className="mt-3 inline-flex items-center justify-center rounded-md px-4 py-3 text-sm font-bold text-white"
-                style={{ backgroundColor: GREEN }}
+                style={{ backgroundColor: "var(--accent)" }}
                 onClick={() => setMobileNavOpen(false)}
               >
                 Get a quote

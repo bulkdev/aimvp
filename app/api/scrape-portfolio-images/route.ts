@@ -2,15 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import type { ApiError } from "@/types";
 import { extractPortfolioImageUrls } from "@/lib/pageImageScrape";
 
+function imageRequestHeaders(imageUrl: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    "User-Agent": "Mozilla/5.0 (compatible; AIWebsiteBuilder/1.0)",
+    Accept: "image/*,*/*;q=0.8",
+  };
+  try {
+    const u = new URL(imageUrl);
+    const host = u.hostname.toLowerCase();
+    if (host.endsWith(".fbcdn.net") || host.includes("fbcdn.net") || host.includes("fbsbx.com")) {
+      headers.Referer = "https://www.facebook.com/";
+    }
+  } catch {
+    /* ignore */
+  }
+  return headers;
+}
+
 async function fetchImageAsDataUrl(url: string): Promise<string | undefined> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
     const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; AIWebsiteBuilder/1.0)",
-        Accept: "image/*,*/*;q=0.8",
-      },
+      headers: imageRequestHeaders(url),
       signal: controller.signal,
     });
     clearTimeout(timeout);

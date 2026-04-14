@@ -288,6 +288,7 @@ export default function SiteTemplate({ project, subpage, publishedBasePath, view
           parallaxImageUrl={sectionParallaxImageForContext(content.assets, "services", isSubpage)}
           parallaxLayerActive={parallaxLayerAllowedForKey(content.assets, "services", isSubpage)}
           parallaxOverlayOpacity={overlayOpacityForSection(content.assets, "services")}
+          layout={content.assets?.designVariants?.renovationsServices ?? "editorial-icons"}
         />
       ) : variant === "superService" ? (
         <SuperServiceTradeCards content={content} intake={intake} />

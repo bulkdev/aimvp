@@ -28,8 +28,12 @@ export default function RenovationsParallaxBand({
         <img src={IMG} alt="" className="h-full w-full object-cover" />
       </motion.div>
       <div
-        className="absolute inset-0 bg-gradient-to-r from-[#0c0a09]/90 via-[#0c0a09]/55 to-transparent"
-        style={{ opacity: scrim }}
+        className="absolute inset-0"
+        style={{
+          opacity: scrim,
+          background:
+            "linear-gradient(to right, color-mix(in srgb, var(--primary) 90%, transparent), color-mix(in srgb, var(--primary) 52%, transparent), transparent)",
+        }}
       />
       <div className="relative z-[1] flex h-full max-w-screen-xl items-center px-6 md:px-12 lg:px-16">
         <blockquote className="max-w-lg">

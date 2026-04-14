@@ -283,6 +283,9 @@ export default function AdminEditor({ project }: Props) {
   const [ourWorkVariant, setOurWorkVariant] = useState<PortfolioLayoutMode>(() =>
     normalizePortfolioLayout(project.content.assets?.designVariants?.ourWork)
   );
+  const [renovationsServicesLayout, setRenovationsServicesLayout] = useState<
+    "editorial-icons" | "image-pill-grid"
+  >(() => project.content.assets?.designVariants?.renovationsServices ?? "editorial-icons");
   const [portfolioHomePreviewCount, setPortfolioHomePreviewCount] = useState(
     () => project.content.assets?.portfolioHomePreviewCount ?? DEFAULT_PORTFOLIO_HOME_PREVIEW_COUNT
   );
@@ -504,6 +507,7 @@ export default function AdminEditor({ project }: Props) {
               heroSlideshow: heroSlideshowVariant,
               heroCtaPlacement,
               ourWork: ourWorkVariant,
+              renovationsServices: renovationsServicesLayout,
             },
             serviceGroups: serviceGroups
               .map((g) => ({
@@ -847,6 +851,27 @@ export default function AdminEditor({ project }: Props) {
                 />
                 <span className="text-white/50">{parallaxOverlayOpacity}%</span>
               </label>
+              <label className="mt-4 block text-xs text-white/70">
+                Services section layout
+                <select
+                  className="mt-1 w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm"
+                  value={renovationsServicesLayout}
+                  onChange={(e) =>
+                    setRenovationsServicesLayout(e.target.value as "editorial-icons" | "image-pill-grid")
+                  }
+                >
+                  <option value="editorial-icons" className="text-slate-900">
+                    Editorial — icon cards
+                  </option>
+                  <option value="image-pill-grid" className="text-slate-900">
+                    Image cards — 2 columns, title pill on each photo
+                  </option>
+                </select>
+              </label>
+              <p className="mt-1 text-[11px] text-white/40">
+                The image layout uses photos you attach to each service in the list below when available; otherwise it
+                shows stock placeholders.
+              </p>
             </div>
           </section>
         ) : null}
