@@ -851,27 +851,6 @@ export default function AdminEditor({ project }: Props) {
                 />
                 <span className="text-white/50">{parallaxOverlayOpacity}%</span>
               </label>
-              <label className="mt-4 block text-xs text-white/70">
-                Services section layout
-                <select
-                  className="mt-1 w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 text-sm"
-                  value={renovationsServicesLayout}
-                  onChange={(e) =>
-                    setRenovationsServicesLayout(e.target.value as "editorial-icons" | "image-pill-grid")
-                  }
-                >
-                  <option value="editorial-icons" className="text-slate-900">
-                    Editorial — icon cards
-                  </option>
-                  <option value="image-pill-grid" className="text-slate-900">
-                    Image cards — 2 columns, title pill on each photo
-                  </option>
-                </select>
-              </label>
-              <p className="mt-1 text-[11px] text-white/40">
-                The image layout uses photos you attach to each service in the list below when available; otherwise it
-                shows stock placeholders.
-              </p>
             </div>
           </section>
         ) : null}
@@ -903,6 +882,9 @@ export default function AdminEditor({ project }: Props) {
                 setHeroSlideshowVariant(slides[Math.floor(Math.random() * slides.length)]);
                 setHeroCtaPlacement(ctas[Math.floor(Math.random() * ctas.length)]);
                 setOurWorkVariant(works[Math.floor(Math.random() * works.length)]);
+                if (siteTemplate === "renovations") {
+                  setRenovationsServicesLayout(Math.random() < 0.5 ? "editorial-icons" : "image-pill-grid");
+                }
               }}
             >
               Randomize style
@@ -1000,6 +982,28 @@ export default function AdminEditor({ project }: Props) {
               ))}
             </select>
           </div>
+          {siteTemplate === "renovations" ? (
+            <div className="grid grid-cols-1 gap-3">
+              <select
+                className="bg-white/5 border border-white/15 rounded-lg px-3 py-2 md:max-w-xl"
+                value={renovationsServicesLayout}
+                onChange={(e) =>
+                  setRenovationsServicesLayout(e.target.value as "editorial-icons" | "image-pill-grid")
+                }
+              >
+                <option value="editorial-icons" className="text-slate-900">
+                  Services: Editorial icon cards
+                </option>
+                <option value="image-pill-grid" className="text-slate-900">
+                  Services: Image cards (2 columns, title pill)
+                </option>
+              </select>
+              <p className="text-[11px] text-white/45">
+                Renovations home page only. Image layout uses per-service photos from your Services list when set;
+                otherwise placeholders.
+              </p>
+            </div>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1 text-[11px] text-white/60">
               <span>Photos / projects to show on home (before blurred “See more”)</span>
