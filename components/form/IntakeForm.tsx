@@ -241,6 +241,7 @@ export default function IntakeForm({ onSubmit, isLoading }: Props) {
               <option value="renovations">Renovations — Parallax, particles &amp; Instagram-style portfolio</option>
               <option value="creator-membership">Content Creator / Membership Platform</option>
               <option value="window-tint-luxury">Window tint — Luxury cinematic (simulator + booking)</option>
+              <option value="hair-design-studio">Hair design studio — Urban luxury (multi-location + booking)</option>
             </select>
             <p className="text-white/35 text-xs mt-1.5">
               Auto looks for trade keywords (e.g. plumbing or HVAC). Choose a layout here to force a template.

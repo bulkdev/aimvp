@@ -38,6 +38,7 @@ import RenovationsInstagramFeed from "./renovations/RenovationsInstagramFeed";
 import RenovationsParallaxBand from "./renovations/RenovationsParallaxBand";
 import CreatorMembershipTemplate from "./creator/CreatorMembershipTemplate";
 import WindowTintLuxuryTemplate from "./window-tint/WindowTintLuxuryTemplate";
+import HairDesignStudioTemplate from "./hair-design-studio/HairDesignStudioTemplate";
 import { isActiveSubscriber } from "@/lib/creator-membership";
 import type { PublishedSubpageSection, SiteSectionKey } from "@/lib/published-subpages";
 import { publishedNavHref } from "@/lib/published-nav-hrefs";
@@ -350,7 +351,7 @@ export default function SiteTemplate({ project, subpage, publishedBasePath, view
   return (
     <div
       style={{ ...(cssVars as React.CSSProperties), position: "relative" }}
-      className={`preview-root${variant === "windowTintLuxury" ? " preview-root--window-tint-luxury" : ""}`}
+      className={`preview-root${variant === "windowTintLuxury" ? " preview-root--window-tint-luxury" : ""}${variant === "hairDesignStudio" ? " preview-root--hair-design-studio" : ""}`}
     >
       <SeoAnalytics />
       {/* Google Fonts for the selected theme */}
@@ -472,6 +473,11 @@ export default function SiteTemplate({ project, subpage, publishedBasePath, view
           background: #030306 !important;
           color: #e4e4e7;
         }
+
+        .preview-root--hair-design-studio {
+          background: #050506 !important;
+          color: #e4e4e7;
+        }
       `}</style>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
@@ -484,6 +490,8 @@ export default function SiteTemplate({ project, subpage, publishedBasePath, view
         />
       ) : variant === "windowTintLuxury" ? (
         <WindowTintLuxuryTemplate project={project} />
+      ) : variant === "hairDesignStudio" ? (
+        <HairDesignStudioTemplate project={project} publishedBasePath={publishedBasePath} />
       ) : (
         <>
           {variant === "renovations" ? (
@@ -562,7 +570,7 @@ export default function SiteTemplate({ project, subpage, publishedBasePath, view
           </ScrollReveal>
         </>
       )}
-      {variant !== "windowTintLuxury" ? (
+      {variant !== "windowTintLuxury" && variant !== "hairDesignStudio" ? (
         <a href={chatHref} className="chat-fab" aria-label="Open chat/contact">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path

@@ -73,6 +73,15 @@ export const DEFAULT_THEMES: Record<string, SiteTheme> = {
     fontBody: "'DM Sans', system-ui, sans-serif",
     style: "modern",
   },
+  /** Urban luxury hair studio: near-black, warm paper contrast, sharp display + clean body */
+  hairDesignStudio: {
+    primaryColor: "#070708",
+    secondaryColor: "#121214",
+    accentColor: "#d4e157",
+    fontHeading: "'Syne', system-ui, sans-serif",
+    fontBody: "'DM Sans', system-ui, sans-serif",
+    style: "modern",
+  },
 };
 
 /**
@@ -88,6 +97,9 @@ export function pickThemeFromIntake(intake: IntakeFormData): SiteTheme {
   }
   if (v === "renovations") {
     return DEFAULT_THEMES.renovations;
+  }
+  if (v === "hairDesignStudio") {
+    return DEFAULT_THEMES.hairDesignStudio;
   }
   return pickTheme(intake.businessDescription);
 }

@@ -16,7 +16,9 @@ export type SiteTemplateChoice =
   /** Patreon-style creator site with gated member content. */
   | "creator-membership"
   /** Premium dark automotive UI: tint simulator, 3D service cards, before/after, booking wizard. */
-  | "window-tint-luxury";
+  | "window-tint-luxury"
+  /** High-end hair studio: multi-location, stylist profiles, filtered services, deposit booking flow. */
+  | "hair-design-studio";
 
 export interface IntakeFormData {
   companyName: string;
@@ -53,6 +55,53 @@ export interface ServiceItem {
   title: string;
   description: string;
   icon: string; // lucide icon name
+  /** Optional group for filters (e.g. Cuts, Coloring). */
+  category?: string;
+  /** Display string shown on cards, e.g. "From $45" or "$45+". */
+  startingPrice?: string;
+  /** Typical session length for booking UI, e.g. "3–5 hrs" or "45 min". */
+  duration?: string;
+}
+
+/** Multi-location hair / braid studio template configuration (stored on `content.assets`). */
+export interface HairDesignStudioLocation {
+  id: string;
+  name: string;
+  /** Short label for toggles, e.g. "Downtown" */
+  shortLabel: string;
+  address: string;
+  hours: string[];
+  /** Optional Google Maps embed `src` URL */
+  mapEmbedUrl?: string;
+  phone?: string;
+}
+
+export interface HairDesignStudioStylist {
+  id: string;
+  name: string;
+  specialty: string;
+  rating: number;
+  photoUrl?: string;
+  bio?: string;
+  /** Which `ServiceItem.title` values this stylist offers */
+  serviceTitles: string[];
+  portfolioUrls?: string[];
+}
+
+export interface HairDesignStudioConfig {
+  locations: HairDesignStudioLocation[];
+  stylists: HairDesignStudioStylist[];
+  /** 0–100; deposit = max(percent of service estimate, depositFlatUsd) */
+  depositPercent?: number;
+  /** Minimum deposit in USD */
+  depositFlatUsd?: number;
+  cancellationSummary?: string;
+  lateCancelFeeUsd?: number;
+  noShowFeeUsd?: number;
+  loyaltyBlurb?: string;
+  /** Raw iframe `src` or embed URLs for social clips */
+  socialVideoEmbeds?: string[];
+  beforeAfterPairs?: { beforeUrl: string; afterUrl: string }[];
 }
 
 export interface FaqItem {
@@ -172,6 +221,13 @@ export interface GeneratedSiteContent {
     /** Browser tab / bookmark icon (PNG, ICO, or SVG data URL). Set in site admin. */
     faviconDataUrl?: string;
     /**
+     * When true, the booking section shows a waitlist form instead of the scheduling placeholder.
+     * Submissions email the site owner (same SMTP path as the contact form).
+     */
+    bookingFullyBooked?: boolean;
+    /** Optional short message above the waitlist form (e.g. next openings). */
+    bookingWaitlistNote?: string;
+    /**
      * Luxury window-tint template: full-screen hero background video URL (mp4/webm/ogg).
      * If unset, the first video URL in `heroSlides` is used when present.
      */
@@ -268,6 +324,8 @@ export interface GeneratedSiteContent {
      * Creator Membership template configuration + demo content.
      * Stored on project content so generated sites can run as full-stack experiences.
      */
+    /** Hair design studio template: locations, stylists, policies, gallery pairs. */
+    hairDesignStudio?: HairDesignStudioConfig;
     creatorMembership?: {
       creatorName?: string;
       creatorTagline?: string;

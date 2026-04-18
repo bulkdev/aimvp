@@ -10,7 +10,8 @@ export type SiteTemplateVariant =
   | "superService"
   | "renovations"
   | "creatorMembership"
-  | "windowTintLuxury";
+  | "windowTintLuxury"
+  | "hairDesignStudio";
 
 /** Keyword-based inference when the user leaves template on "auto". */
 export function inferSiteVariant(description: string, companyName = ""): SiteTemplateVariant {
@@ -31,6 +32,26 @@ export function inferSiteVariant(description: string, companyName = ""): SiteTem
   ];
   for (const word of windowTintSignals) {
     if (lower.includes(word)) return "windowTintLuxury";
+  }
+
+  const hairStudioSignals = [
+    "hair design",
+    "hair studio",
+    "braid",
+    "braids",
+    "dread",
+    "dreads",
+    "locs",
+    "loc ",
+    "twists",
+    "natural hair",
+    "hair salon",
+    "beauty salon",
+    "barbershop",
+    "barber shop",
+  ];
+  for (const word of hairStudioSignals) {
+    if (lower.includes(word)) return "hairDesignStudio";
   }
 
   const superServiceSignals = [
@@ -131,6 +152,7 @@ export function resolveSiteVariant(
   if (choice === "renovations") return "renovations";
   if (choice === "creator-membership") return "creatorMembership";
   if (choice === "window-tint-luxury") return "windowTintLuxury";
+  if (choice === "hair-design-studio") return "hairDesignStudio";
   if (choice === "plumbing" || choice === "plumbing-split" || choice === "plumbing-boxed" || choice === "plumbing-flow") {
     return "plumbing";
   }

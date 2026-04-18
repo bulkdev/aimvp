@@ -669,6 +669,7 @@ export default function OwnerDashboard({ project }: Props) {
               <option value="renovations" className="text-slate-900">Template: Renovations — Parallax, particles, portfolio</option>
               <option value="creator-membership" className="text-slate-900">Template: Content Creator / Membership Platform</option>
               <option value="window-tint-luxury" className="text-slate-900">Template: Window tint — Luxury cinematic</option>
+              <option value="hair-design-studio" className="text-slate-900">Template: Hair design studio — Urban luxury</option>
             </select>
             <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
             <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" />
@@ -1061,9 +1062,9 @@ export default function OwnerDashboard({ project }: Props) {
           </div>
         </section>
 
-        {siteTemplate === "window-tint-luxury" ? (
+        {siteTemplate === "window-tint-luxury" || siteTemplate === "hair-design-studio" ? (
           <section className="bg-white/5 border border-violet-500/25 rounded-xl p-4 space-y-4">
-            <p className="text-sm font-medium text-violet-200">Luxury tint — hero video &amp; before/after</p>
+            <p className="text-sm font-medium text-violet-200">Hero video (window tint &amp; hair studio)</p>
             <p className="text-xs text-white/50">
               Paste an mp4/webm URL for the looping hero. Upload poster + real before/after shots, or rely on the first
               video URL in hero slides + first two portfolio photos.
@@ -1556,10 +1557,32 @@ export default function OwnerDashboard({ project }: Props) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {services.map((s, idx) => (
-              <button key={idx} type="button" onClick={() => setActiveService(idx)} className="relative rounded-xl overflow-hidden border border-white/15 hover:border-white/35 transition-all text-left">
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setActiveService(idx)}
+                className="relative rounded-xl overflow-hidden border border-white/15 hover:border-white/35 transition-all text-left"
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={serviceImages[s.title.trim().toLowerCase()] || "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=1200&q=80"} alt={s.title} className="h-44 w-full object-cover" />
+                <img
+                  src={
+                    serviceImages[s.title.trim().toLowerCase()] ||
+                    "https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&w=1200&q=80"
+                  }
+                  alt={s.title}
+                  className="h-44 w-full object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 to-black/10" />
+                {s.category?.trim() ? (
+                  <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
+                    {s.category.trim()}
+                  </span>
+                ) : null}
+                {s.startingPrice?.trim() ? (
+                  <span className="absolute right-2 top-2 rounded-full bg-emerald-600/90 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                    {s.startingPrice.trim()}
+                  </span>
+                ) : null}
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="font-semibold">{s.title}</p>
                   <p className="text-xs text-white/75 line-clamp-2">{s.description || "Click to edit"}</p>
@@ -1604,7 +1627,35 @@ export default function OwnerDashboard({ project }: Props) {
           <button className="absolute inset-0 bg-black/60" onClick={() => setActiveService(null)} />
           <div className="relative w-full max-w-xl bg-slate-900 border border-white/15 rounded-xl p-4 space-y-3">
             <h3 className="text-lg font-semibold">Edit Service</h3>
-            <input className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={editingService.title} onChange={(e) => setServices((prev) => prev.map((s, i) => (i === activeService ? { ...s, title: e.target.value } : s)))} />
+            <input className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={editingService.title} onChange={(e) => setServices((prev) => prev.map((s, i) => (i === activeService ? { ...s, title: e.target.value } : s)))} placeholder="Title" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input
+                className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+                value={editingService.category ?? ""}
+                onChange={(e) =>
+                  setServices((prev) => prev.map((s, i) => (i === activeService ? { ...s, category: e.target.value } : s)))
+                }
+                placeholder="Type (e.g. Cuts, Coloring)"
+              />
+              <input
+                className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+                value={editingService.startingPrice ?? ""}
+                onChange={(e) =>
+                  setServices((prev) =>
+                    prev.map((s, i) => (i === activeService ? { ...s, startingPrice: e.target.value } : s))
+                  )
+                }
+                placeholder="Starting price (e.g. From $45)"
+              />
+            </div>
+            <input
+              className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+              value={editingService.icon}
+              onChange={(e) =>
+                setServices((prev) => prev.map((s, i) => (i === activeService ? { ...s, icon: e.target.value } : s)))
+              }
+              placeholder="Lucide icon name"
+            />
             <textarea className="w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2 h-24" value={editingService.description} onChange={(e) => setServices((prev) => prev.map((s, i) => (i === activeService ? { ...s, description: e.target.value } : s)))} />
             <div className="flex items-center justify-between">
               <div>

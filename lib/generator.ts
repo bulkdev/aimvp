@@ -66,7 +66,7 @@ Generate a professional website content JSON for this local business:
 
 Company Name: ${intake.companyName}
 Business Description: ${intake.businessDescription}
-Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; plumbing-flow = compact slider hero + glass nav; super-service = multi-trade HVAC/plumbing style with service areas; renovations = parallax / portfolio showcase for remodel & GC; creator-membership = Patreon-style creator platform with paywall + reels; window-tint-luxury = premium dark automotive film site with simulator + booking wizard)
+Site layout preference: ${intake.siteTemplate ?? "auto"} (auto = infer trade; plumbing-* = plumber layout; plumbing-flow = compact slider hero + glass nav; super-service = multi-trade HVAC/plumbing style with service areas; renovations = parallax / portfolio showcase for remodel & GC; creator-membership = Patreon-style creator platform with paywall + reels; window-tint-luxury = premium dark automotive film site with simulator + booking wizard; hair-design-studio = luxury urban hair / braid / loc studio with two locations, stylist roster, filtered service grid, deposit booking)
 Source Link (optional): ${intake.sourceLink || "N/A"}
 ${optionals}
 Booking: ${intake.bookingEnabled ? "Yes" : "No"}
@@ -83,9 +83,9 @@ Return a JSON object with this EXACT structure:
     "ctaSecondaryText": "secondary CTA (optional, e.g. 'Learn More')"
   },
   "services": [
-    { "title": "Service Name", "description": "2-3 sentence description", "icon": "lucide-icon-name" },
-    { "title": "Service Name", "description": "2-3 sentence description", "icon": "lucide-icon-name" },
-    { "title": "Service Name", "description": "2-3 sentence description", "icon": "lucide-icon-name" }
+    { "title": "Service Name", "description": "2-3 sentence description", "icon": "lucide-icon-name", "category": "optional filter group", "startingPrice": "From $85", "duration": "1–2 hrs" },
+    { "title": "Service Name", "description": "2-3 sentence description", "icon": "lucide-icon-name", "category": "optional filter group", "startingPrice": "From $120", "duration": "2–3 hrs" },
+    { "title": "Service Name", "description": "2-3 sentence description", "icon": "lucide-icon-name", "category": "optional filter group", "startingPrice": "From $95", "duration": "45 min" }
   ],
   "about": {
     "heading": "About [Company Name]",
@@ -142,6 +142,16 @@ Trade-specific (home & commercial renovations / general contractor): Premium, co
 - services: realistic lanes — e.g. design & planning, residential remodels, commercial build-outs / TI, kitchens & baths, additions, finishing & interiors.
 - about: describe a real process (discovery → scope → build) without fake awards or certifications not in intake.
 - assets: include rich portfolio imagery via portfolioProjects or portfolioEntries when possible.`;
+  }
+  if (v === "hairDesignStudio") {
+    return `
+Trade-specific (hair design studio / braids / locs / natural hair): confident, urban-luxury tone — short headlines, zero generic "Wix" filler.
+- Hero: bold conversion headline + subtitle about precision, hygiene, and booking — mention ${intake.city || "the area"} when relevant.
+- services: exactly FIVE items with titles Dreads, Braids, Twists, Cuts, Coloring (or close equivalents). Each MUST include "category" matching one of those lanes, "startingPrice" like "From $X", "duration" like "3–5 hrs", lucide "icon", and a vivid description.
+- about: culture of the chair — consultation, timing honesty, aftercare — no fake celebrity endorsements.
+- assets.hairDesignStudio: include "locations" (2 objects with id, name, shortLabel, address, hours array, optional mapEmbedUrl empty string), "stylists" (at least 3 with id, name, specialty, rating 4.5-5, serviceTitles array subset of service titles, bio, portfolioUrls optional empty), depositPercent 25, depositFlatUsd 35, cancellationSummary text, lateCancelFeeUsd 35, noShowFeeUsd 75, loyaltyBlurb, beforeAfterPairs (2 pairs with beforeUrl/afterUrl use empty strings if none), socialVideoEmbeds optional empty array.
+- assets.manualReviews: 3 believable testimonials with reviewerName, rating, text (no URLs to real platforms unless provided).
+- assets.siteStats: four stats (years, clients served, rating, artists) plausible only.`;
   }
   if (v === "windowTintLuxury") {
     return `
@@ -412,6 +422,164 @@ function generateMock(intake: IntakeFormData): GeneratedSiteContent {
     };
   }
 
+  if (variant === "hairDesignStudio") {
+    const hairServices = deriveServices(intake, name);
+    const phoneLine = intake.phone?.trim();
+    const imgA = "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=900&q=80";
+    const imgB = "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80";
+    const imgC = "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=900&q=80";
+    return {
+      brandName: name,
+      tagline: `Precision hair · ${city}`,
+      hero: {
+        title: "Precision Hair Design. Book Your Look.",
+        subtitle: `Two locations, one standard: consultation-first booking, artists who respect your time, and finished work that holds in real life — serving ${city} and nearby.`,
+        ctaText: "Book appointment",
+        ctaSecondaryText: "Explore services",
+      },
+      services: hairServices,
+      about: {
+        heading: "The chair is a craft bench",
+        body: `We built ${name} for clients who want clarity before the first section is braided — realistic timing, deposit-backed reservations, and stylists who treat edges and scalp health as non-negotiable.\n\nWhether you are maintaining locs, resetting length, or going bold with color, you will always know what the day costs, how long you are in the chair, and what aftercare keeps the style sharp.\n\nBook online, choose your studio, and lock your deposit so the calendar stays honest for everyone.`,
+        highlights: ["Deposit holds your chair", "Two studios, synced standards", "Aftercare you can repeat at home"],
+      },
+      faqs: [
+        {
+          question: "Why is a deposit required?",
+          answer:
+            "Deposits protect artist time and keep waitlists fair. Your deposit applies to the service total on the day of your appointment.",
+        },
+        {
+          question: "Can I switch locations after booking?",
+          answer:
+            "Yes — email or call us with 24+ hours notice and we will move you to the other studio if the same service and duration are available.",
+        },
+        {
+          question: "How do I prepare for long braid or loc appointments?",
+          answer:
+            "Arrive with clean, detangled hair unless your stylist notes otherwise. Bring snacks and a charger — we publish honest duration ranges so you can plan your day.",
+        },
+        {
+          question: "Do you offer color on the same day as extensions?",
+          answer:
+            "Sometimes — it depends on hair health and lift goals. Your stylist will confirm after a quick consult so we never compromise the integrity of your hair.",
+        },
+        {
+          question: "What is your cancellation policy?",
+          answer:
+            "Late cancellations and no-shows forfeit the deposit per studio policy. Details are shown again at checkout so there are no surprises.",
+        },
+      ],
+      contact: {
+        heading: "Studio desk",
+        subheading: `Questions before you book? Message us — we reply fast for ${city} clients.`,
+      },
+      assets: {
+        heroSlides: intake.importedHeroSlides,
+        portfolioProjects: intake.importedPortfolioProjects,
+        siteStats: [
+          { value: "12+", label: "Artists on roster" },
+          { value: "4.9", label: "Avg. studio rating" },
+          { value: "2", label: "City locations" },
+          { value: "48hr", label: "Style guarantee check-in" },
+        ],
+        manualReviews: [
+          {
+            reviewerName: "Imani V.",
+            rating: 5,
+            text: "North side studio is spotless. They quoted time to the minute and my knotless braids lasted six weeks.",
+            avatarLetter: "I",
+          },
+          {
+            reviewerName: "Chris L.",
+            rating: 5,
+            text: "Deposit flow felt professional — like a real high-end salon, not a random DM booking.",
+            avatarLetter: "C",
+          },
+          {
+            reviewerName: "Rae K.",
+            rating: 5,
+            text: "Jordan rebuilt my locs without thinning my edges. That consult alone was worth it.",
+            avatarLetter: "R",
+          },
+        ],
+        hairDesignStudio: {
+          depositPercent: 25,
+          depositFlatUsd: 35,
+          cancellationSummary:
+            "Cancel 24+ hours before your start time to move your deposit to a new date. Inside24 hours, a late cancellation fee may apply. No-shows forfeit the deposit and may require prepayment for future bookings.",
+          lateCancelFeeUsd: 35,
+          noShowFeeUsd: 75,
+          loyaltyBlurb: "Third visit within six months: complimentary deep-conditioning or steam treatment add-on.",
+          locations: [
+            {
+              id: "studio-north",
+              name: `${name} — North Atelier`,
+              shortLabel: "North",
+              address: intake.address?.trim() || `1840 Meridian Ave, ${city}`,
+              hours: ["Tue–Fri 9a–8p", "Sat 8a–7p", "Sun 10a–5p"],
+              mapEmbedUrl: "",
+              phone: phoneLine,
+            },
+            {
+              id: "studio-south",
+              name: `${name} — South Loft`,
+              shortLabel: "South",
+              address: `2200 Linea St, ${city}`,
+              hours: ["Wed–Fri 10a–9p", "Sat–Sun 9a–6p"],
+              mapEmbedUrl: "",
+              phone: phoneLine,
+            },
+          ],
+          stylists: [
+            {
+              id: "stylist-jordan",
+              name: "Jordan Ellis",
+              specialty: "Dread specialist",
+              rating: 4.95,
+              bio: "10+ years on locs and natural texture — obsessed with section geometry and long-term hair health.",
+              serviceTitles: ["Dreads", "Twists"],
+              photoUrl: imgA,
+              portfolioUrls: [imgA, imgB, imgC],
+            },
+            {
+              id: "stylist-mei",
+              name: "Mei Alvarez",
+              specialty: "Braid architect",
+              rating: 4.9,
+              bio: "Knotless, stitch, and couture patterns with timing you can plan your day around.",
+              serviceTitles: ["Braids", "Twists"],
+              photoUrl: imgB,
+              portfolioUrls: [imgB, imgC],
+            },
+            {
+              id: "stylist-sam",
+              name: "Sam Okonkwo",
+              specialty: "Color + cut",
+              rating: 4.92,
+              bio: "Curly precision cutting and color that respects shrinkage — consult-first, always.",
+              serviceTitles: ["Cuts", "Coloring"],
+              photoUrl: imgC,
+              portfolioUrls: [imgC, imgA],
+            },
+          ],
+          beforeAfterPairs: [
+            {
+              beforeUrl: "https://images.unsplash.com/photo-1503951914875-452162b0e3e1?auto=format&fit=crop&w=800&q=80",
+              afterUrl: "https://images.unsplash.com/photo-1492106087828-4f1cb1e4e5c4?auto=format&fit=crop&w=800&q=80",
+            },
+            {
+              beforeUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
+              afterUrl: "https://images.unsplash.com/photo-1562322140-8baeececf3df?auto=format&fit=crop&w=800&q=80",
+            },
+          ],
+          socialVideoEmbeds: [],
+        },
+      },
+      theme: pickThemeFromIntake(intake),
+    };
+  }
+
   if (variant === "creatorMembership") {
     const creatorName = intake.creatorName?.trim() || name;
     const now = new Date().toISOString();
@@ -619,6 +787,52 @@ function resolveServiceArea(intake: IntakeFormData): string {
 function deriveServices(intake: IntakeFormData, name: string): ServiceItem[] {
   const lower = intake.businessDescription.toLowerCase();
   const v = resolveSiteVariant(intake.businessDescription, intake.siteTemplate ?? "auto", intake.companyName);
+
+  if (v === "hairDesignStudio") {
+    const area = intake.city || "your area";
+    return [
+      {
+        title: "Dreads",
+        category: "Dreads",
+        startingPrice: "From $185",
+        duration: "4–7 hrs",
+        description: `Neat sections, consistent tension, and finish work that photographs clean — new sets and rebuilds for clients across ${area}.`,
+        icon: "Sparkles",
+      },
+      {
+        title: "Braids",
+        category: "Braids",
+        startingPrice: "From $165",
+        duration: "3–6 hrs",
+        description: `Knotless, feed-ins, and statement patterns with edge care and realistic timing so you are never rushed out of the chair.`,
+        icon: "LayoutGrid",
+      },
+      {
+        title: "Twists",
+        category: "Twists",
+        startingPrice: "From $140",
+        duration: "2–5 hrs",
+        description: `Two-strand and rope twists with hydration-first prep — minimal frizz, defined silhouette, and aftercare you can repeat at home.`,
+        icon: "Wind",
+      },
+      {
+        title: "Cuts",
+        category: "Cuts",
+        startingPrice: "From $55",
+        duration: "45–75 min",
+        description: `Shape refresh, precision line-ups, and texture-aware cutting for curly and coily hair — consult-first, cut-second.`,
+        icon: "Scissors",
+      },
+      {
+        title: "Coloring",
+        category: "Coloring",
+        startingPrice: "From $95",
+        duration: "2–4 hrs",
+        description: `Rich dimension, healthy lift, and honest maintenance timelines — gloss, foil accents, and corrective work by consult only.`,
+        icon: "Palette",
+      },
+    ];
+  }
 
   if (v === "windowTintLuxury") {
     const area = intake.city || "your area";

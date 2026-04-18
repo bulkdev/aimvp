@@ -5,6 +5,11 @@ import { getClientIpFromNextRequest } from "@/lib/client-ip";
 import { rateLimitAllow } from "@/lib/rate-limit";
 import { isAppHost, parseRequestHost } from "@/lib/custom-domain";
 
+/** Single-segment paths like `/gmblogo.svg` — public files, not customer slugs (slugs cannot contain `.`). */
+function looksLikeRootStaticFile(path: string): boolean {
+  return /^\/[^/]+\.(?:svg|png|jpe?g|gif|webp|ico|woff2?|ttf|eot|txt|xml|webmanifest)$/i.test(path);
+}
+
 export async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith("/api/auth") && req.method === "POST") {
     const ip = getClientIpFromNextRequest(req);
@@ -39,7 +44,8 @@ export async function middleware(req: NextRequest) {
     path.startsWith("/manifest") ||
     path.startsWith("/icon") ||
     path.startsWith("/opengraph-image") ||
-    path.startsWith("/twitter-image");
+    path.startsWith("/twitter-image") ||
+    looksLikeRootStaticFile(path);
   const skipRewrite =
     isPublicAsset ||
     path.startsWith("/api/") ||

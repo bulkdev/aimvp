@@ -692,6 +692,7 @@ export default function AdminEditor({ project }: Props) {
             <option value="renovations" className="text-slate-900">Template: Renovations — Parallax, particles, portfolio feed</option>
             <option value="creator-membership" className="text-slate-900">Template: Content Creator / Membership Platform</option>
             <option value="window-tint-luxury" className="text-slate-900">Template: Window tint — Luxury cinematic</option>
+            <option value="hair-design-studio" className="text-slate-900">Template: Hair design studio — Urban luxury</option>
           </select>
           <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={phone} onChange={(e)=>setPhone(e.target.value)} placeholder="Phone" />
           <input className="bg-white/5 border border-white/15 rounded-lg px-3 py-2" value={city} onChange={(e)=>setCity(e.target.value)} placeholder="City" />
@@ -1296,15 +1297,14 @@ export default function AdminEditor({ project }: Props) {
           </div>
         </div>
 
-        {siteTemplate === "window-tint-luxury" ? (
+        {siteTemplate === "window-tint-luxury" || siteTemplate === "hair-design-studio" ? (
           <div className="bg-white/5 border border-violet-500/25 rounded-xl p-4 space-y-4">
             <div>
-              <p className="text-sm font-medium text-violet-200">Luxury tint — hero video &amp; comparison</p>
+              <p className="text-sm font-medium text-violet-200">Hero video (window tint &amp; hair studio)</p>
               <p className="text-xs text-white/50 mt-1">
                 Host a short looping <strong className="text-white/70">mp4/webm</strong> (CDN or direct URL). Poster and
                 stills can be uploaded or pasted. You can also put a video URL as the{" "}
-                <strong className="text-white/70">first hero slide</strong> and still images after it — the template
-                picks them up automatically.
+                <strong className="text-white/70">first hero slide</strong> — both templates pick it up automatically.
               </p>
             </div>
             <label className="block text-xs text-white/70">
@@ -1591,36 +1591,89 @@ export default function AdminEditor({ project }: Props) {
             </button>
           </div>
           <div className="space-y-3">
-            {services.map((service, idx) => (
-              <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-3 border border-white/10 rounded-lg p-3">
-                <input
-                  className="bg-white/5 border border-white/15 rounded-lg px-3 py-2"
-                  value={service.title}
-                  onChange={(e) =>
-                    setServices((prev) => prev.map((s, i) => (i === idx ? { ...s, title: e.target.value } : s)))
-                  }
-                  placeholder="Service title"
-                />
-                <input
-                  className="bg-white/5 border border-white/15 rounded-lg px-3 py-2 md:col-span-2"
-                  value={service.description}
-                  onChange={(e) =>
-                    setServices((prev) => prev.map((s, i) => (i === idx ? { ...s, description: e.target.value } : s)))
-                  }
-                  placeholder="Service description"
-                />
-                <div className="flex gap-2">
-                  <input type="file" accept="image/*" onChange={(e) => void setServiceImage(service.title, e.target.files)} className="text-xs w-full" />
-                  <button
-                    type="button"
-                    className="px-2 py-1 rounded bg-red-600/80 hover:bg-red-500 text-xs"
-                    onClick={() => setServices((prev) => prev.filter((_, i) => i !== idx))}
-                  >
-                    Remove
-                  </button>
+            {services.map((service, idx) => {
+              const img =
+                serviceImages[service.title.trim().toLowerCase()] ||
+                serviceImages[service.title.trim()] ||
+                "";
+              return (
+                <div key={idx} className="grid grid-cols-1 md:grid-cols-6 gap-3 border border-white/10 rounded-lg p-3">
+                  <div className="md:col-span-1 flex flex-col gap-2">
+                    <div className="aspect-square w-full max-w-[120px] overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                      {img ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={img} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center p-2 text-center text-[10px] text-white/40">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => void setServiceImage(service.title, e.target.files)}
+                      className="text-[10px] text-white/70"
+                    />
+                  </div>
+                  <div className="md:col-span-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <input
+                      className="bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+                      value={service.title}
+                      onChange={(e) =>
+                        setServices((prev) => prev.map((s, i) => (i === idx ? { ...s, title: e.target.value } : s)))
+                      }
+                      placeholder="Service title"
+                    />
+                    <input
+                      className="bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+                      value={service.category ?? ""}
+                      onChange={(e) =>
+                        setServices((prev) =>
+                          prev.map((s, i) => (i === idx ? { ...s, category: e.target.value } : s))
+                        )
+                      }
+                      placeholder="Type (e.g. Cuts, Coloring)"
+                    />
+                    <input
+                      className="bg-white/5 border border-white/15 rounded-lg px-3 py-2"
+                      value={service.startingPrice ?? ""}
+                      onChange={(e) =>
+                        setServices((prev) =>
+                          prev.map((s, i) => (i === idx ? { ...s, startingPrice: e.target.value } : s))
+                        )
+                      }
+                      placeholder="Starting price (e.g. From $45)"
+                    />
+                    <input
+                      className="bg-white/5 border border-white/15 rounded-lg px-3 py-2 sm:col-span-2"
+                      value={service.icon}
+                      onChange={(e) =>
+                        setServices((prev) => prev.map((s, i) => (i === idx ? { ...s, icon: e.target.value } : s)))
+                      }
+                      placeholder="Lucide icon name (e.g. Scissors)"
+                    />
+                    <textarea
+                      className="bg-white/5 border border-white/15 rounded-lg px-3 py-2 sm:col-span-2 lg:col-span-3 min-h-[72px]"
+                      value={service.description}
+                      onChange={(e) =>
+                        setServices((prev) => prev.map((s, i) => (i === idx ? { ...s, description: e.target.value } : s)))
+                      }
+                      placeholder="Service description"
+                    />
+                    <div className="sm:col-span-2 lg:col-span-3 flex justify-end">
+                      <button
+                        type="button"
+                        className="px-2 py-1 rounded bg-red-600/80 hover:bg-red-500 text-xs"
+                        onClick={() => setServices((prev) => prev.filter((_, i) => i !== idx))}
+                      >
+                        Remove service
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
